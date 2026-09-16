@@ -25,6 +25,45 @@ html[data-gafi-ui="on"][data-gafi-scheme="light"] body :is(input,textarea,select
 /* The selected palette also controls ordinary links instead of leaving native blue links behind. */
 html[data-gafi-ui="on"] body :is(a,[role="link"]){color:var(--gafi-accent)!important}
 
+/* Never blur native ChatGPT chrome. This removes the persistent top/bottom haze without changing layout. */
+html[data-gafi-ui="on"] body :is(nav,header,footer,
+  [class*="backdrop-blur"],[class*="backdrop-filter"],
+  [style*="backdrop-filter"],[style*="backdropFilter"]){
+  -webkit-backdrop-filter:none!important;
+  backdrop-filter:none!important;
+}
+
+html[data-gafi-ui="on"] body :is(nav,header,footer){
+  background-color:var(--gafi-surface)!important;
+}
+
+/* The composer region must stay crisp and above the decorative atmosphere. */
+html[data-gafi-ui="on"] body :is(form,[role="search"],textarea,[contenteditable="true"]){
+  -webkit-backdrop-filter:none!important;
+  backdrop-filter:none!important;
+}
+
+/* Voice controls should follow the selected surface instead of retaining a white native fill. */
+html[data-gafi-ui="on"] body :is(
+  [data-testid*="speech"],
+  [data-testid*="voice"],
+  button[aria-label*="voice" i],
+  button[aria-label*="speak" i],
+  button[aria-label*="microphone" i],
+  button[aria-label*="microfone" i]
+){
+  background-color:var(--gafi-surface)!important;
+  color:var(--gafi-text)!important;
+  border-color:color-mix(in srgb,var(--gafi-muted) 24%,transparent)!important;
+  box-shadow:none;
+}
+
+/* Lower-left/sidebar chrome must not retain a native translucent blur. */
+html[data-gafi-ui="on"] body :is(aside,nav) :is([class*="backdrop-blur"],[class*="backdrop-filter"]){
+  -webkit-backdrop-filter:none!important;
+  backdrop-filter:none!important;
+}
+
 /* Reduced motion remains independent from the native ChatGPT accessibility setting. */
 html[data-gafi-ui="on"][data-gafi-animations="false"] #gafi-atmosphere-layer,
 html[data-gafi-ui="on"][data-gafi-animations="false"] #gafi-atmosphere-layer *{animation:none!important}
