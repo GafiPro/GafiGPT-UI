@@ -57,8 +57,8 @@ const wiringChecks = [
 for (const [needle, message] of wiringChecks) if (!(js.includes(needle) || css.includes(needle))) throw new Error(message);
 
 const fixSafeguards = [
-  'backdrop-filter:none!important',
-  '[class*="backdrop-blur"]',
+  'body *{-webkit-backdrop-filter:none!important;backdrop-filter:none!important}',
+  'data-gafi-glass="true"] #gafi-ui-panel',
   '[data-testid*="speech"]',
   'button[aria-label*="microphone" i]',
   'html[data-gafi-ui="on"] body :is(nav,header,footer){'
@@ -82,4 +82,4 @@ if (!script?.css?.includes('styles.css')) throw new Error('styles.css not regist
 if (!script?.css?.includes('fixes.css')) throw new Error('fixes.css not registered');
 if (!manifest.host_permissions?.some(value => value.includes('chatgpt.com'))) throw new Error('chatgpt.com host permission missing');
 
-console.log(`PASS: ${themes.length} themes + ${stateKeys.length} state keys + silent-UI regression guards + native chrome safeguards + manifest`);
+console.log(`PASS: ${themes.length} themes + ${stateKeys.length} state keys + silent-UI regression guards + native blur/voice safeguards + manifest`);
