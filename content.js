@@ -41,10 +41,21 @@
   const makeTheme = a => ({ name:a[0], vibe:a[1], bg:a[2], surface:a[3], surface2:a[4], text:a[5], muted:a[6], accent:a[7], accent2:a[8], special:a[9], specialLabel:a[10], scheme:a[11] });
   Object.keys(THEMES).forEach(k => { THEMES[k] = makeTheme(THEMES[k]); });
 
+  const BOOLEAN_KEYS = ['customColors','rounded','glass','atmosphere','gradients','glow','shadows','animations','compact','highContrast','focusGlow','noise'];
+  const NUMBER_RANGES = {
+    blur: [0, 36],
+    radius: [6, 36],
+    density: [75, 125],
+    fontScale: [90, 115],
+    atmosphereIntensity: [0, 100],
+  };
+  const COLOR_KEYS = ['customBackground','customContrast','customAccent'];
+
   let state = { ...DEFAULTS };
   let panelOpen = false;
-  let applying = false;
+  let refreshQueued = false;
   let observerStarted = false;
+  let domRepairQueued = false;
 
   const el = (tag, props = {}, children = []) => {
     const node = document.createElement(tag);
@@ -62,7 +73,10 @@
     return node;
   };
 
-  const clamp = (value, min, max) => Math.max(min, Math.min(max, Number(value)));
+  const clamp = (value, min, max) => {
+    const number = Number(value);
+    return Number.isFinite(number) ? Math.max(min, Math.min(max, number)) : min;
+  };
   const validHex = value => /^#[0-9a-f]{6}$/i.test(String(value));
 
   function hexToRgb(hex) {
@@ -82,6 +96,16 @@
     return rgbToHex(a[0] * (1 - amount) + b[0] * amount, a[1] * (1 - amount) + b[1] * amount, a[2] * (1 - amount) + b[2] * amount);
   }
 
+  function normalizeState(raw) {
+    const source = raw && typeof raw === 'object' ? raw : {};
+    const next = { ...DEFAULTS, ...source };
+    if (!Object.prototype.hasOwnProperty.call(THEMES, next.theme)) next.theme = DEFAULTS.theme;
+    BOOLEAN_KEYS.forEach(key => { next[key] = Boolean(next[key]); });
+    Object.entries(NUMBER_RANGES).forEach(([key, [min, max]]) => { next[key] = clamp(next[key], min, max); });
+    COLOR_KEYS.forEach(key => { if (!validHex(next[key])) next[key] = DEFAULTS[key]; });
+    return next;
+  }
+
   function getTheme() { return THEMES[state.theme] || THEMES.midnight; }
 
   function persist() {
@@ -92,12 +116,12 @@
     get() {
       return new Promise(resolve => {
         try {
-          chrome.storage.local.get({ gafiGPTUI: DEFAULTS }, result => resolve({ ...DEFAULTS, ...(result?.gafiGPTUI || {}) }));
+          chrome.storage.local.get({ gafiGPTUI: DEFAULTS }, result => resolve(normalizeState(result?.gafiGPTUI)));
         } catch (_) { resolve({ ...DEFAULTS }); }
       });
     },
     set(patch) {
-      state = { ...state, ...patch };
+      state = normalizeState({ ...state, ...patch });
       persist();
       applyState();
     }
@@ -151,11 +175,15 @@
   }
 
   function applyState() {
-    if (applying || !document.documentElement) return;
-    applying = true;
+    if (!document.documentElement) return;
     setVars();
     ensureAtmosphereLayer();
-    requestAnimationFrame(() => { refreshControls(); applying = false; });
+    if (refreshQueued) return;
+    refreshQueued = true;
+    requestAnimationFrame(() => {
+      refreshQueued = false;
+      refreshControls();
+    });
   }
 
   function addSection(root, title, children) {
@@ -176,7 +204,12 @@
     const value = el('span', { class: 'gafi-value' });
     const input = el('input', { type: 'range', min, max, step, value: state[key] });
     const render = () => { value.textContent = `${Math.round(state[key])}${suffix}`; input.value = state[key]; };
-    input.addEventListener('input', () => { state[key] = clamp(input.value, min, max); render(); setVars(); ensureAtmosphereLayer(); });
+    input.addEventListener('input', () => {
+      state[key] = clamp(input.value, min, max);
+      render();
+      setVars();
+      ensureAtmosphereLayer();
+    });
     input.addEventListener('change', persist);
     wrap.append(el('div', { class: 'gafi-range-head' }, [el('span', { text: label }), value]), input);
     render();
@@ -210,8 +243,8 @@
       input.dataset.channel = String(index);
       input.addEventListener('input', () => {
         const rgb = hexToRgb(state[key]);
-        rgb[index] = Number(input.value);
-        state[key] = rgbToHex(...rgb);
+        rgb[index] = clamp(input.value, 0, 255);
+        state[key] = rgbToHex(...rgb).toUpperCase();
         persist();
         applyState();
       });
@@ -241,8 +274,8 @@
     addSection(scroll, '10 temas', [themeGrid()]);
     addSection(scroll, 'Atmosfera', [toggleRow('Efeito especial do tema', 'atmosphere', 'Cada tema tem uma atmosfera única.'), rangeRow('Intensidade da atmosfera', 'atmosphereIntensity', 0, 100), el('div', { class: 'gafi-theme-hint' })]);
     addSection(scroll, 'Cores', [toggleRow('Cores personalizadas', 'customColors', 'Fundo, contraste e accent manuais.'), colorRow('Fundo', 'customBackground'), colorRow('Contraste', 'customContrast'), colorRow('Accent / destaque', 'customAccent'), rgbPanel('RGB do fundo', 'customBackground'), rgbPanel('RGB do contraste', 'customContrast'), rgbPanel('RGB do accent', 'customAccent')]);
-    addSection(scroll, 'Efeitos', [toggleRow('Glass', 'glass', 'Transparência e blur.'), toggleRow('Cantos arredondados', 'rounded', 'Raio aplicado de forma consistente.'), toggleRow('Gradientes', 'gradients', 'Luz e cor suave no ambiente.'), toggleRow('Glow', 'glow', 'Brilho nos elementos de destaque.'), toggleRow('Sombras', 'shadows', 'Profundidade dos painéis.'), toggleRow('Animações', 'animations', 'Movimento e transições.'), toggleRow('Glow ao focar', 'focusGlow', 'Realce ao escrever e interagir.'), toggleRow('Ruído cinematográfico', 'noise', 'Textura subtil de filme.')]);
-    addSection(scroll, 'Interface', [toggleRow('Modo compacto', 'compact', 'Reduz espaçamento da interface.'), toggleRow('Contraste reforçado', 'highContrast', 'Melhora fronteiras e legibilidade.'), rangeRow('Raio dos cantos', 'radius', 6, 36, 1, 'px'), rangeRow('Blur', 'blur', 0, 36, 1, 'px'), rangeRow('Densidade', 'density', 75, 125), rangeRow('Escala do texto', 'fontScale', 90, 115)]);
+    addSection(scroll, 'Efeitos', [toggleRow('Glass', 'glass', 'Transparência e blur sem interferir nos inputs.'), toggleRow('Cantos arredondados', 'rounded', 'Raio aplicado ao GafiGPT UI.'), toggleRow('Gradientes', 'gradients', 'Luz e cor suave no ambiente.'), toggleRow('Glow', 'glow', 'Brilho nos elementos de destaque.'), toggleRow('Sombras', 'shadows', 'Profundidade dos painéis.'), toggleRow('Animações', 'animations', 'Movimento e transições.'), toggleRow('Glow ao focar', 'focusGlow', 'Realce ao escrever e interagir.'), toggleRow('Ruído cinematográfico', 'noise', 'Textura subtil de filme.')]);
+    addSection(scroll, 'Interface', [toggleRow('Modo compacto', 'compact', 'Reduz o espaçamento do painel.'), toggleRow('Contraste reforçado', 'highContrast', 'Melhora fronteiras e legibilidade.'), rangeRow('Raio dos cantos', 'radius', 6, 36, 1, 'px'), rangeRow('Blur', 'blur', 0, 36, 1, 'px'), rangeRow('Densidade', 'density', 75, 125), rangeRow('Escala do texto', 'fontScale', 90, 115)]);
     const reset = el('button', { class: 'gafi-secondary-btn', type: 'button', text: 'Repor predefinições' });
     reset.addEventListener('click', () => storage.set({ ...DEFAULTS }));
     scroll.append(el('div', { class: 'gafi-actions' }, [reset]));
@@ -266,24 +299,26 @@
     if (!document.body) return;
     const expected = state.atmosphere ? getTheme().special : 'none';
     const current = document.getElementById('gafi-atmosphere-layer');
+    if (expected === 'none') {
+      current?.remove();
+      return;
+    }
     if (current?.dataset.special === expected) return;
     current?.remove();
     const layer = el('div', { id: 'gafi-atmosphere-layer', class: 'gafi-atmosphere-layer', dataset: { special: expected }, ariaLabel: '' });
-    if (expected !== 'none') {
-      const count = { aurora: 14, forest: 22, snow: 34, bubbles: 20, 'rgb-led': 15, sunset: 8, petals: 18, dust: 24, paper: 1, stars: 44 }[expected] || 12;
-      const fragment = document.createDocumentFragment();
-      for (let i = 0; i < count; i++) {
-        const item = el('span', { class: `gafi-atmo-item gafi-atmo-${expected}` });
-        item.style.setProperty('--i', i);
-        item.style.setProperty('--delay', `${-(i % 11) * 1.7}s`);
-        item.style.setProperty('--size', `${8 + (i % 6) * 3}px`);
-        item.style.setProperty('--drift', `${-40 + ((i * 29) % 81)}px`);
-        item.style.setProperty('--x', `${(i * 17.3) % 103}%`);
-        item.style.setProperty('--y', `${(i * 23.7) % 108}%`);
-        fragment.append(item);
-      }
-      layer.append(fragment);
+    const count = { aurora: 14, forest: 22, snow: 34, bubbles: 20, 'rgb-led': 15, sunset: 8, petals: 18, dust: 24, paper: 1, stars: 44 }[expected] || 12;
+    const fragment = document.createDocumentFragment();
+    for (let i = 0; i < count; i++) {
+      const item = el('span', { class: `gafi-atmo-item gafi-atmo-${expected}` });
+      item.style.setProperty('--i', i);
+      item.style.setProperty('--delay', `${-(i % 11) * 1.7}s`);
+      item.style.setProperty('--size', `${8 + (i % 6) * 3}px`);
+      item.style.setProperty('--drift', `${-40 + ((i * 29) % 81)}px`);
+      item.style.setProperty('--x', `${(i * 17.3) % 103}%`);
+      item.style.setProperty('--y', `${(i * 23.7) % 108}%`);
+      fragment.append(item);
     }
+    layer.append(fragment);
     document.body.prepend(layer);
   }
 
@@ -301,14 +336,21 @@
     document.body.append(button);
   }
 
+  function scheduleDomRepair() {
+    if (domRepairQueued) return;
+    domRepairQueued = true;
+    requestAnimationFrame(() => {
+      domRepairQueued = false;
+      if (!document.getElementById('gafi-ui-toggle')) buildToggleButton();
+      if (!document.getElementById('gafi-ui-panel') && panelOpen) buildPanel();
+      if (state.atmosphere && !document.getElementById('gafi-atmosphere-layer')) ensureAtmosphereLayer();
+    });
+  }
+
   function watchDom() {
     if (observerStarted || !document.body) return;
     observerStarted = true;
-    const observer = new MutationObserver(() => {
-      if (!document.getElementById('gafi-ui-toggle')) buildToggleButton();
-      if (!document.getElementById('gafi-ui-panel') && panelOpen) buildPanel();
-      if (!document.getElementById('gafi-atmosphere-layer')) ensureAtmosphereLayer();
-    });
+    const observer = new MutationObserver(scheduleDomRepair);
     observer.observe(document.body, { childList: true, subtree: true });
   }
 
@@ -316,7 +358,7 @@
     try {
       chrome.storage.onChanged.addListener((changes, area) => {
         if (area !== 'local' || !changes.gafiGPTUI?.newValue) return;
-        state = { ...DEFAULTS, ...changes.gafiGPTUI.newValue };
+        state = normalizeState(changes.gafiGPTUI.newValue);
         applyState();
       });
     } catch (_) {}
