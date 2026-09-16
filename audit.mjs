@@ -61,15 +61,26 @@ if (!fixes.includes('-webkit-backdrop-filter:none!important')) throw new Error('
 if (!fixes.includes('backdrop-filter:none!important')) throw new Error('Native backdrop blur kill-switch missing');
 if (!fixes.includes('[data-gafi-chatgpt-surface="true"]')) throw new Error('ChatGPT header surface safeguard missing');
 if (!fixes.includes('[data-gafi-account-surface="true"]')) throw new Error('Account surface safeguard missing');
+if (!fixes.includes('[data-gafi-composer-surface="true"]')) throw new Error('Composer surface safeguard missing');
+if (!fixes.includes('[data-gafi-composer="true"]')) throw new Error('Composer field safeguard missing');
 if (!fixes.includes('[data-gafi-search="true"]')) throw new Error('Search field safeguard missing');
 if (!fixes.includes('[data-gafi-search-surface="true"]')) throw new Error('Search surface safeguard missing');
 if (!fixes.includes('background:var(--gafi-surface)!important')) throw new Error('Theme surface fallback missing');
 
-/* Runtime policy: native ChatGPT UI must never receive backdrop blur. */
-if (!fixes.includes('ABSOLUTE GLASS KILL-SWITCH')) throw new Error('Runtime blur kill-switch missing');
+/* Blur is forbidden at runtime, including the original glass implementation. */
+if (/backdrop-filter\s*:\s*blur\s*\(/i.test(css) || /backdrop-filter\s*:\s*blur\s*\(/i.test(fixes)) {
+  throw new Error('Backdrop blur must be completely absent');
+}
+if (/blur\(var\(--gafi-blur\)\)/i.test(css) || /blur\(var\(--gafi-blur\)\)/i.test(fixes)) {
+  throw new Error('Gafi blur variable must not be applied');
+}
+
+/* Runtime semantic integration. */
 if (!integration.includes('data-gafi-search')) throw new Error('Semantic search integration missing');
 if (!integration.includes('data-gafi-chatgpt-surface')) throw new Error('ChatGPT header integration missing');
 if (!integration.includes('data-gafi-account-surface')) throw new Error('Account integration missing');
+if (!integration.includes('data-gafi-composer-surface')) throw new Error('Composer integration missing');
+if (!integration.includes('childList: true')) throw new Error('DOM replacement observer missing');
 
 const forbiddenPatterns = [
   ['if (applying || !document.documentElement)', 'State updates are being dropped behind an apply lock'],
@@ -87,4 +98,4 @@ if (!script?.css?.includes('styles.css')) throw new Error('styles.css not regist
 if (!script?.css?.includes('fixes.css')) throw new Error('fixes.css not registered');
 if (!manifest.host_permissions?.some(value => value.includes('chatgpt.com'))) throw new Error('chatgpt.com host permission missing');
 
-console.log(`PASS: ${themes.length} themes + ${stateKeys.length} state keys + silent-UI regression guards + runtime zero-backdrop-blur policy + semantic native-chrome integration + manifest`);
+console.log(`PASS: ${themes.length} themes + ${stateKeys.length} state keys + semantic shell/composer guards + zero-backdrop-blur policy + native chrome safeguards + manifest`);
