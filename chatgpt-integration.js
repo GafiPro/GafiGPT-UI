@@ -43,17 +43,13 @@
       if (!WORDS.composer.test(meta)) return;
       node.dataset.gafiComposer = 'true';
 
-      const candidates = ancestors(node).filter(({ rect, style, depth }) => {
+      ancestors(node).filter(({ rect, style, depth }) => {
         const nearBottom = rect.bottom >= window.innerHeight - 300;
         const broad = rect.width >= Math.max(450, window.innerWidth * 0.42);
         const plausible = rect.height >= 45 && rect.height <= 260;
         const positioned = style.position === 'fixed' || style.position === 'sticky' || depth <= 9;
         return nearBottom && broad && plausible && positioned;
-      });
-
-      // Mark every plausible shell in this small bottom zone. ChatGPT often puts
-      // its gradient/fade on an ancestor rather than on the textarea container.
-      candidates.forEach(({ el }) => { el.dataset.gafiComposerSurface = 'true'; });
+      }).forEach(({ el }) => { el.setAttribute(attrFor('gafiComposerSurface'), 'true'); });
     });
   }
 
@@ -63,9 +59,9 @@
       if (!WORDS.search.test(meta) || WORDS.composer.test(meta)) return;
       node.dataset.gafiSearch = 'true';
       const candidate = ancestors(node, 7).find(({ rect }) => rect.width >= 180 && rect.height >= 36 && rect.height <= 180);
-      if (candidate) candidate.el.dataset.gafiSearchSurface = 'true';
+      if (candidate) candidate.el.setAttribute(attrFor('gafiSearchSurface'), 'true');
       const dialog = node.closest('[role="dialog"]');
-      if (dialog) dialog.dataset.gafiSearchSurface = 'true';
+      if (dialog) dialog.setAttribute(attrFor('gafiSearchSurface'), 'true');
     });
   }
 
@@ -77,27 +73,23 @@
       const text = textOf(node);
       if (!text || text.length > 120 || !regex.test(text)) continue;
       const match = ancestors(node).find(({ rect, style, depth }) => predicate(rect, style, depth));
-      if (match) match.el.dataset[attrFor(marker).slice(5)] = 'true';
+      if (match) match.el.setAttribute(attrFor(marker), 'true');
     }
   }
 
   function markShell() {
-    // Stable top-left ChatGPT branding surface.
     markSemanticTextSurface(WORDS.chatgpt, 'gafiChatgptSurface', (rect) => {
       return rect.left <= Math.min(40, window.innerWidth * 0.04) &&
         rect.top <= 90 && rect.width >= 180 && rect.width < window.innerWidth * 0.5 &&
         rect.height >= 40 && rect.height <= 180;
     });
 
-    // Bottom-left account card containing the profile/plan and Redeem Offer button.
     markSemanticTextSurface(WORDS.account, 'gafiAccountSurface', (rect) => {
       return rect.left <= Math.min(40, window.innerWidth * 0.04) &&
         rect.bottom >= window.innerHeight - 35 && rect.width >= 240 && rect.width < window.innerWidth * 0.5 &&
         rect.height >= 65 && rect.height <= 220;
     });
 
-    // Top-right action/header chrome. This is where ChatGPT's translucent strip/fade
-    // can live independently from the main header element.
     markSemanticTextSurface(WORDS.topChrome, 'gafiTopChromeSurface', (rect, style) => {
       const nearTop = rect.top <= 110 && rect.bottom >= 35;
       const broad = rect.width >= Math.max(360, window.innerWidth * 0.35);
