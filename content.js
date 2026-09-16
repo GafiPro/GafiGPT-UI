@@ -2,24 +2,10 @@
   'use strict';
 
   const DEFAULTS = {
-    theme: 'midnight',
-    customBackground: '#10131a',
-    customContrast: '#f5f7ff',
-    customAccent: '#9b7cff',
-    glass: true,
-    rounded: true,
-    forest: false,
-    gradients: true,
-    glow: true,
-    shadows: true,
-    animations: true,
-    compact: false,
-    highContrast: true,
-    customColors: false,
-    blur: 18,
-    radius: 18,
-    density: 100,
-    fontScale: 100,
+    theme: 'midnight', customBackground: '#10131a', customContrast: '#f5f7ff', customAccent: '#9b7cff',
+    glass: true, rounded: true, forest: false, gradients: true, glow: true, shadows: true,
+    animations: true, compact: false, highContrast: true, customColors: false,
+    blur: 18, radius: 18, density: 100, fontScale: 100,
   };
 
   const THEMES = {
@@ -61,6 +47,11 @@
   const clamp = (n, min, max) => Math.max(min, Math.min(max, Number(n)));
   const theme = () => THEMES[state.theme] || THEMES.midnight;
 
+  function mix(a, b, amount) {
+    const ar = hexToRgb(a), br = hexToRgb(b);
+    return rgbToHex(Math.round(ar[0] * (1 - amount) + br[0] * amount), Math.round(ar[1] * (1 - amount) + br[1] * amount), Math.round(ar[2] * (1 - amount) + br[2] * amount));
+  }
+
   function setVars() {
     const t = theme();
     const bg = state.customColors ? state.customBackground : t.bg;
@@ -90,22 +81,13 @@
     document.documentElement.dataset.gafiUi = 'on';
     document.documentElement.dataset.gafiGlass = String(state.glass);
     document.documentElement.dataset.gafiRounded = String(state.rounded);
-    document.documentElement.dataset.gafiForest = String(state.forest || (THEMES[state.theme] || {}).forest);
+    document.documentElement.dataset.gafiForest = String(state.forest);
     document.documentElement.dataset.gafiGradients = String(state.gradients);
     document.documentElement.dataset.gafiGlow = String(state.glow);
     document.documentElement.dataset.gafiShadows = String(state.shadows);
     document.documentElement.dataset.gafiAnimations = String(state.animations);
     document.documentElement.dataset.gafiCompact = String(state.compact);
     document.documentElement.dataset.gafiHighContrast = String(state.highContrast);
-  }
-
-  function mix(a, b, amount) {
-    const ar = hexToRgb(a), br = hexToRgb(b);
-    return rgbToHex(
-      Math.round(ar[0] * (1 - amount) + br[0] * amount),
-      Math.round(ar[1] * (1 - amount) + br[1] * amount),
-      Math.round(ar[2] * (1 - amount) + br[2] * amount)
-    );
   }
 
   function applyState() {
@@ -160,7 +142,7 @@
     return wrap;
   }
 
-  function colorRow(label, key, options = {}) {
+  function colorRow(label, key) {
     const wrap = make('div', { class: 'gafi-color-row' });
     const picker = make('input', { type: 'color', value: state[key] });
     const hex = make('input', { class: 'gafi-hex', type: 'text', value: state[key], maxlength: 7 });
@@ -173,17 +155,16 @@
 
   function rgbPanel(key, title) {
     const wrap = make('div', { class: 'gafi-rgb-panel' });
-    const heading = make('div', { class: 'gafi-subtitle', text: title });
-    const values = ['r', 'g', 'b'].map(channel => make('span', { class: 'gafi-rgb-value', text: '0' }));
-    const sliders = ['r', 'g', 'b'].map((channel, i) => {
+    wrap.append(make('div', { class: 'gafi-subtitle', text: title }));
+    ['r', 'g', 'b'].forEach((channel, i) => {
+      const value = make('span', { class: 'gafi-rgb-value', text: String(hexToRgb(state[key])[i]) });
       const input = make('input', { type: 'range', min: 0, max: 255, value: hexToRgb(state[key])[i] });
       input.addEventListener('input', () => {
         const rgb = hexToRgb(state[key]); rgb[i] = Number(input.value); state[key] = rgbToHex(...rgb);
         chrome.storage.local.set({ gafiGPTUI: state }); applyState(); updateControls();
       });
-      return make('div', { class: `gafi-rgb-line rgb-${channel}` }, [make('span', { text: channel.toUpperCase() }), input, values[i]]);
+      wrap.append(make('div', { class: `gafi-rgb-line rgb-${channel}` }, [make('span', { text: channel.toUpperCase() }), input, value]));
     });
-    wrap.append(heading, ...sliders);
     return wrap;
   }
 
@@ -211,10 +192,11 @@
 
     const scroll = make('div', { class: 'gafi-panel-scroll' });
     addSection(scroll, 'Temas', [themeGrid()]);
-
-    const customToggle = toggleRow('Cores personalizadas', 'customColors', 'Ativa o fundo, contraste e accent escolhidos abaixo.');
-    addSection(scroll, 'Cores & Contraste', [customToggle, colorRow('Fundo', 'customBackground'), colorRow('Contraste', 'customContrast'), colorRow('Accent', 'customAccent'), rgbPanel('customBackground', 'RGB do fundo'), rgbPanel('customContrast', 'RGB do contraste')]);
-
+    addSection(scroll, 'Cores & Contraste', [
+      toggleRow('Cores personalizadas', 'customColors', 'Ativa o fundo, contraste e accent escolhidos abaixo.'),
+      colorRow('Fundo', 'customBackground'), colorRow('Contraste', 'customContrast'), colorRow('Accent', 'customAccent'),
+      rgbPanel('customBackground', 'RGB do fundo'), rgbPanel('customContrast', 'RGB do contraste'), rgbPanel('customAccent', 'RGB do accent'),
+    ]);
     addSection(scroll, 'Efeitos', [
       toggleRow('Glass', 'glass', 'Vidro translúcido com blur.'),
       toggleRow('Cantos arredondados', 'rounded', 'Aplica raios consistentes a toda a interface.'),
@@ -224,7 +206,6 @@
       toggleRow('Animações', 'animations', 'Transições e micro-animações.'),
       toggleRow('Folhas de floresta', 'forest', 'Decoração orgânica nos espaços vazios.'),
     ]);
-
     addSection(scroll, 'Layout', [
       toggleRow('Modo compacto', 'compact', 'Reduz espaços e largura da UI.'),
       toggleRow('Contraste reforçado', 'highContrast', 'Melhora legibilidade em superfícies e texto.'),
@@ -236,14 +217,11 @@
 
     const actions = make('div', { class: 'gafi-actions' });
     const reset = make('button', { class: 'gafi-secondary-btn', text: 'Repor predefinições' });
-    reset.addEventListener('click', () => { storage.set({ ...DEFAULTS }); });
-    actions.append(reset);
-    scroll.append(actions);
-
-    const footer = make('div', { class: 'gafi-panel-footer', text: 'Tudo aqui é opcional — desliga o que não combina contigo.' });
-    root.append(scroll, footer);
+    reset.addEventListener('click', () => storage.set({ ...DEFAULTS }));
+    actions.append(reset); scroll.append(actions);
+    root.append(scroll, make('div', { class: 'gafi-panel-footer', text: 'Tudo aqui é opcional — desliga o que não combina contigo.' }));
     document.body.append(root);
-    if (state.forest || (THEMES[state.theme] || {}).forest) ensureForestLayer();
+    if (state.forest) ensureForestLayer();
     updateControls();
   }
 
@@ -251,58 +229,52 @@
     const panel = document.getElementById('gafi-ui-panel');
     if (!panel) return;
     panel.querySelectorAll('.gafi-theme-card').forEach(el => el.classList.toggle('is-active', el.dataset.theme === state.theme && !state.customColors));
-    panel.querySelectorAll('input[type="checkbox"]').forEach(input => {
-      const row = input.closest('.gafi-toggle-row');
-      const key = Object.keys(DEFAULTS).find(k => row && row.title === '' && false); // keep compatibility with manually changed controls
-      if (input.closest('.gafi-toggle-row')?.textContent) {
-        const label = input.closest('.gafi-toggle-row').querySelector('strong')?.textContent;
-        const map = {
-          'Cores personalizadas': 'customColors', 'Glass': 'glass', 'Cantos arredondados': 'rounded', 'Gradientes': 'gradients', 'Glow': 'glow', 'Sombras': 'shadows',
-          'Animações': 'animations', 'Folhas de floresta': 'forest', 'Modo compacto': 'compact', 'Contraste reforçado': 'highContrast'
-        };
-        if (map[label]) input.checked = !!state[map[label]];
-      }
+    const map = {
+      'Cores personalizadas': 'customColors', 'Glass': 'glass', 'Cantos arredondados': 'rounded', 'Gradientes': 'gradients',
+      'Glow': 'glow', 'Sombras': 'shadows', 'Animações': 'animations', 'Folhas de floresta': 'forest',
+      'Modo compacto': 'compact', 'Contraste reforçado': 'highContrast'
+    };
+    panel.querySelectorAll('.gafi-toggle-row').forEach(row => {
+      const label = row.querySelector('strong')?.textContent;
+      const key = map[label];
+      if (key) row.querySelector('input').checked = !!state[key];
     });
-    panel.querySelectorAll('.gafi-hex').forEach((input, i) => {
-      const key = ['customBackground', 'customContrast', 'customAccent'][i % 3];
-      if (key) input.value = state[key];
-    });
-    panel.querySelectorAll('input[type="color"]').forEach((input, i) => {
-      const key = ['customBackground', 'customContrast', 'customAccent'][i % 3];
-      if (key) input.value = state[key];
-    });
+    panel.querySelectorAll('.gafi-hex').forEach((input, i) => input.value = state[['customBackground', 'customContrast', 'customAccent'][i % 3]]);
+    panel.querySelectorAll('input[type="color"]').forEach((input, i) => input.value = state[['customBackground', 'customContrast', 'customAccent'][i % 3]]);
     panel.querySelectorAll('.gafi-value').forEach((v, i) => {
       const keys = ['radius', 'blur', 'density', 'fontScale'];
       if (keys[i]) v.textContent = `${Math.round(state[keys[i]])}${keys[i] === 'radius' || keys[i] === 'blur' ? 'px' : '%'}`;
     });
-    if (state.forest || (THEMES[state.theme] || {}).forest) ensureForestLayer(); else removeForestLayer();
+    panel.querySelectorAll('.gafi-rgb-panel').forEach((box, panelIndex) => {
+      const key = ['customBackground', 'customContrast', 'customAccent'][panelIndex];
+      if (!key) return;
+      const rgb = hexToRgb(state[key]);
+      box.querySelectorAll('.gafi-rgb-line').forEach((line, i) => {
+        const slider = line.querySelector('input');
+        const value = line.querySelector('.gafi-rgb-value');
+        slider.value = rgb[i]; value.textContent = rgb[i];
+      });
+    });
+    if (state.forest) ensureForestLayer(); else removeForestLayer();
   }
 
   function ensureForestLayer() {
     if (document.getElementById('gafi-forest-layer')) return;
     const layer = make('div', { id: 'gafi-forest-layer', class: 'gafi-forest-layer', 'aria-hidden': 'true' });
-    for (let i = 0; i < 18; i++) {
-      layer.append(make('span', { class: 'gafi-leaf', style: `--i:${i};--rot:${(i * 31) % 360}deg;--delay:${(i % 7) * -1.2}s;--size:${18 + (i % 5) * 7}px` }));
-    }
+    for (let i = 0; i < 18; i++) layer.append(make('span', { class: 'gafi-leaf', style: `--i:${i};--rot:${(i * 31) % 360}deg;--delay:${(i % 7) * -1.2}s;--size:${18 + (i % 5) * 7}px` }));
     document.body.prepend(layer);
   }
-
   function removeForestLayer() { document.getElementById('gafi-forest-layer')?.remove(); }
-
   function togglePanel(open = !panelOpen) {
-    panelOpen = open;
-    buildPanel();
+    panelOpen = open; buildPanel();
     document.documentElement.classList.toggle('gafi-panel-open', open);
     document.getElementById('gafi-ui-toggle')?.classList.toggle('is-open', open);
   }
-
   function buildToggleButton() {
     if (document.getElementById('gafi-ui-toggle')) return;
     const button = make('button', { id: 'gafi-ui-toggle', class: 'gafi-floating-button', type: 'button', title: 'Abrir GafiGPT UI', text: '✦' });
-    button.addEventListener('click', () => togglePanel());
-    document.body.append(button);
+    button.addEventListener('click', () => togglePanel()); document.body.append(button);
   }
-
   function guardAgainstRouteChanges() {
     const observer = new MutationObserver(() => {
       if (!document.getElementById('gafi-ui-toggle')) buildToggleButton();
@@ -311,14 +283,8 @@
     });
     observer.observe(document.body, { childList: true, subtree: true });
   }
-
   async function init() {
-    state = await storage.get();
-    setVars();
-    buildToggleButton();
-    buildPanel();
-    guardAgainstRouteChanges();
+    state = await storage.get(); setVars(); buildToggleButton(); buildPanel(); guardAgainstRouteChanges();
   }
-
   init();
 })();
