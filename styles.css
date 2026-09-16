@@ -1,0 +1,273 @@
+/* GafiGPT UI — visual layer */
+
+:root[data-gafi-ui="on"] {
+  color-scheme: dark;
+  --gafi-bg: #0b0d12;
+  --gafi-surface: #131722;
+  --gafi-surface-2: #1a1f2c;
+  --gafi-text: #f7f7fb;
+  --gafi-muted: #b7bdd0;
+  --gafi-accent: #9b7cff;
+  --gafi-accent-2: #c6b7ff;
+  --gafi-radius: 18px;
+  --gafi-blur: 18px;
+  --gafi-density: 1;
+  --gafi-font-scale: 1;
+  --gafi-shadow: 0 16px 50px rgba(0,0,0,.2);
+  --gafi-glow: 0 0 28px rgba(155,124,255,.20);
+  --gafi-gradient: linear-gradient(135deg, rgba(155,124,255,.12), transparent 55%);
+}
+
+html[data-gafi-ui="on"] body {
+  background: var(--gafi-bg) !important;
+  color: var(--gafi-text) !important;
+  transition: background .35s ease, color .25s ease;
+}
+
+html[data-gafi-ui="on"] body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -5;
+  pointer-events: none;
+  background: var(--gafi-gradient);
+  opacity: .9;
+}
+
+/* Broad surface adaptation: ChatGPT uses many neutral gray tokens, so we intentionally
+   remap common surfaces instead of targeting only a single DOM revision. */
+html[data-gafi-ui="on"] body :is(main, nav, header, footer, aside, [role="dialog"], [role="menu"], [data-radix-popper-content-wrapper]) {
+  --tw-bg-opacity: 1 !important;
+}
+
+html[data-gafi-ui="on"] body :is([class*="bg-token-main-surface"], [class*="bg-token-sidebar-surface"], [class*="bg-gray"], [class*="bg-zinc"], [class*="bg-neutral"], [class*="bg-slate"]) {
+  background-color: color-mix(in srgb, var(--gafi-surface) calc(82% + (var(--gafi-density) * 3%)), transparent) !important;
+  color: var(--gafi-text) !important;
+}
+
+html[data-gafi-ui="on"] body :is([class*="text-token-text"], [class*="text-gray"], [class*="text-zinc"], [class*="text-neutral"], [class*="text-slate"]) {
+  color: var(--gafi-text) !important;
+}
+
+html[data-gafi-ui="on"] body :is([class*="text-token-text-secondary"], [class*="text-secondary"], [class*="text-muted"]) {
+  color: var(--gafi-muted) !important;
+}
+
+html[data-gafi-ui="on"][data-gafi-rounded="true"] body :is(button, textarea, input, [role="button"], [class*="rounded"], [class*="border-radius"]) {
+  border-radius: var(--gafi-radius) !important;
+}
+
+html[data-gafi-ui="on"][data-gafi-rounded="true"] body :is(textarea, input, [contenteditable="true"]) {
+  border-radius: max(12px, var(--gafi-radius)) !important;
+}
+
+html[data-gafi-ui="on"][data-gafi-glass="true"] body :is(nav, aside, header, [role="dialog"], [role="menu"], textarea, input, [contenteditable="true"]) {
+  background-color: color-mix(in srgb, var(--gafi-surface) 72%, transparent) !important;
+  -webkit-backdrop-filter: blur(var(--gafi-blur)) saturate(125%) !important;
+  backdrop-filter: blur(var(--gafi-blur)) saturate(125%) !important;
+}
+
+html[data-gafi-ui="on"][data-gafi-shadows="true"] body :is([role="dialog"], [role="menu"], nav, aside) {
+  box-shadow: var(--gafi-shadow) !important;
+}
+
+html[data-gafi-ui="on"][data-gafi-glow="true"] body :is(button:hover, [role="button"]:hover, textarea:focus, input:focus, [contenteditable="true"]:focus) {
+  box-shadow: var(--gafi-glow) !important;
+  border-color: color-mix(in srgb, var(--gafi-accent) 55%, transparent) !important;
+}
+
+html[data-gafi-ui="on"][data-gafi-high-contrast="true"] body :is(button, [role="button"], textarea, input, [contenteditable="true"]) {
+  border-color: color-mix(in srgb, var(--gafi-muted) 22%, transparent) !important;
+}
+
+html[data-gafi-ui="on"][data-gafi-compact="true"] body :is(main, nav, aside) {
+  --gafi-density: .78;
+}
+
+html[data-gafi-ui="on"][data-gafi-animations="false"] body *,
+html[data-gafi-ui="on"][data-gafi-animations="false"] body *::before,
+html[data-gafi-ui="on"][data-gafi-animations="false"] body *::after {
+  animation: none !important;
+  transition: none !important;
+}
+
+/* Accent adaptation for controls, focus rings and links. */
+html[data-gafi-ui="on"] body :is(a, button[data-state="active"], [aria-current="page"], [data-state="checked"]) {
+  --tw-ring-color: var(--gafi-accent) !important;
+}
+
+html[data-gafi-ui="on"] body :is(button:hover, [role="button"]:hover) {
+  color: var(--gafi-text) !important;
+}
+
+/* Keep the message stream readable without forcing pill-shaped bubbles everywhere. */
+html[data-gafi-ui="on"] body :is(article, [data-message-author-role], [data-testid*="conversation-turn"]) {
+  font-size: calc(1em * var(--gafi-font-scale));
+}
+
+/* ===== Gafi control UI ===== */
+#gafi-ui-toggle {
+  all: unset;
+  box-sizing: border-box;
+  position: fixed;
+  right: 22px;
+  bottom: 22px;
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  z-index: 2147483640;
+  cursor: pointer;
+  border: 1px solid color-mix(in srgb, var(--gafi-accent) 36%, transparent);
+  border-radius: 16px;
+  color: var(--gafi-text);
+  background: color-mix(in srgb, var(--gafi-surface) 74%, transparent);
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+  box-shadow: var(--gafi-shadow), var(--gafi-glow);
+  font: 700 19px/1 ui-sans-serif, system-ui, sans-serif;
+  transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease;
+}
+#gafi-ui-toggle:hover { transform: translateY(-2px) scale(1.03); }
+#gafi-ui-toggle.is-open { transform: rotate(45deg); }
+
+#gafi-ui-panel {
+  position: fixed;
+  top: 14px;
+  right: 14px;
+  bottom: 14px;
+  width: min(380px, calc(100vw - 28px));
+  z-index: 2147483639;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  color: var(--gafi-text);
+  background: color-mix(in srgb, var(--gafi-surface) 91%, transparent);
+  border: 1px solid color-mix(in srgb, var(--gafi-muted) 18%, transparent);
+  border-radius: calc(var(--gafi-radius) + 5px);
+  box-shadow: 0 24px 90px rgba(0,0,0,.38), var(--gafi-glow);
+  -webkit-backdrop-filter: blur(var(--gafi-blur)) saturate(140%);
+  backdrop-filter: blur(var(--gafi-blur)) saturate(140%);
+  transform: translateX(calc(100% + 24px));
+  opacity: 0;
+  pointer-events: none;
+  transition: transform .32s cubic-bezier(.22,.8,.2,1), opacity .25s ease;
+}
+html.gafi-panel-open #gafi-ui-panel { transform: translateX(0); opacity: 1; pointer-events: auto; }
+
+.gafi-panel::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(140deg, color-mix(in srgb, var(--gafi-accent) 10%, transparent), transparent 35%);
+}
+.gafi-panel-header, .gafi-panel-footer, .gafi-panel-scroll { position: relative; z-index: 1; }
+.gafi-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 17px 17px 14px;
+  border-bottom: 1px solid color-mix(in srgb, var(--gafi-muted) 12%, transparent);
+}
+.gafi-brand { display: flex; align-items: center; gap: 11px; }
+.gafi-brand strong { display: block; font-size: 14px; letter-spacing: -.02em; }
+.gafi-brand small { display: block; margin-top: 2px; color: var(--gafi-muted); font-size: 11px; }
+.gafi-logo {
+  display: grid; place-items: center;
+  width: 34px; height: 34px;
+  border-radius: 11px;
+  background: linear-gradient(135deg, var(--gafi-accent), var(--gafi-accent-2));
+  color: #fff;
+  box-shadow: var(--gafi-glow);
+  font: 900 16px/1 ui-sans-serif, system-ui, sans-serif;
+}
+.gafi-close {
+  all: unset;
+  cursor: pointer;
+  width: 30px; height: 30px;
+  display: grid; place-items: center;
+  border-radius: 10px;
+  color: var(--gafi-muted);
+  background: color-mix(in srgb, var(--gafi-surface-2) 65%, transparent);
+  font-size: 22px;
+}
+.gafi-close:hover { color: var(--gafi-text); background: var(--gafi-surface-2); }
+.gafi-panel-scroll { overflow: auto; padding: 10px 13px 20px; scrollbar-width: thin; }
+.gafi-panel-scroll::-webkit-scrollbar { width: 8px; }
+.gafi-panel-scroll::-webkit-scrollbar-thumb { background: color-mix(in srgb, var(--gafi-muted) 18%, transparent); border-radius: 99px; }
+.gafi-section { margin: 6px 0 14px; padding: 13px; border: 1px solid color-mix(in srgb, var(--gafi-muted) 10%, transparent); border-radius: var(--gafi-radius); background: color-mix(in srgb, var(--gafi-surface-2) 40%, transparent); }
+.gafi-section-title { margin-bottom: 10px; color: var(--gafi-text); font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: .09em; }
+.gafi-theme-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 8px; }
+.gafi-theme-card {
+  all: unset;
+  box-sizing: border-box;
+  min-height: 65px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 9px;
+  cursor: pointer;
+  border: 1px solid color-mix(in srgb, var(--gafi-muted) 10%, transparent);
+  border-radius: calc(var(--gafi-radius) - 5px);
+  background: color-mix(in srgb, var(--gafi-surface) 55%, transparent);
+  transition: transform .18s ease, border-color .18s ease, background .18s ease;
+}
+.gafi-theme-card:hover { transform: translateY(-1px); border-color: color-mix(in srgb, var(--gafi-accent) 45%, transparent); }
+.gafi-theme-card.is-active { border-color: var(--gafi-accent); box-shadow: 0 0 0 1px color-mix(in srgb, var(--gafi-accent) 28%, transparent), var(--gafi-glow); }
+.gafi-theme-card strong { color: var(--gafi-text); font-size: 11px; line-height: 1.15; }
+.gafi-swatch { flex: 0 0 auto; width: 38px; height: 38px; border-radius: 12px; display: block; background: var(--swatch-bg); position: relative; overflow: hidden; border: 1px solid rgba(255,255,255,.09); }
+.gafi-swatch::after { content: ""; position: absolute; width: 19px; height: 19px; right: -3px; bottom: -3px; border-radius: 50%; background: var(--swatch-accent); box-shadow: 0 0 18px var(--swatch-accent); }
+.gafi-toggle-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 47px; cursor: pointer; }
+.gafi-toggle-copy { display: grid; gap: 2px; }
+.gafi-toggle-copy strong { font-size: 12px; }
+.gafi-toggle-copy small { color: var(--gafi-muted); font-size: 10px; line-height: 1.25; }
+.gafi-switch { position: relative; width: 41px; height: 23px; flex: 0 0 auto; }
+.gafi-switch input { opacity: 0; width: 0; height: 0; position: absolute; }
+.gafi-switch i { position: absolute; inset: 0; border-radius: 999px; background: color-mix(in srgb, var(--gafi-muted) 26%, transparent); border: 1px solid color-mix(in srgb, var(--gafi-muted) 14%, transparent); transition: .2s ease; }
+.gafi-switch i::before { content: ""; position: absolute; top: 3px; left: 3px; width: 15px; height: 15px; border-radius: 50%; background: var(--gafi-muted); transition: .2s ease; box-shadow: 0 1px 5px rgba(0,0,0,.25); }
+.gafi-switch input:checked + i { background: var(--gafi-accent); border-color: var(--gafi-accent); box-shadow: var(--gafi-glow); }
+.gafi-switch input:checked + i::before { transform: translateX(18px); background: #fff; }
+.gafi-color-row, .gafi-range-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.gafi-color-row { min-height: 41px; font-size: 11px; }
+.gafi-color-control { display: flex; align-items: center; gap: 6px; }
+.gafi-color-control input[type="color"] { width: 28px; height: 28px; padding: 0; border: 0; background: transparent; cursor: pointer; }
+.gafi-hex { width: 75px; border: 1px solid color-mix(in srgb, var(--gafi-muted) 16%, transparent); border-radius: 9px; background: color-mix(in srgb, var(--gafi-surface) 62%, transparent); color: var(--gafi-text); padding: 6px 7px; font: 10px/1 ui-monospace, SFMono-Regular, Consolas, monospace; }
+.gafi-range-row { padding: 8px 0; }
+.gafi-range-head { font-size: 11px; margin-bottom: 7px; }
+.gafi-value { color: var(--gafi-accent-2); font: 700 10px/1 ui-monospace, SFMono-Regular, Consolas, monospace; }
+.gafi-range-row input[type="range"], .gafi-rgb-line input[type="range"] { width: 100%; accent-color: var(--gafi-accent); }
+.gafi-subtitle { font-size: 10px; font-weight: 800; color: var(--gafi-muted); margin-bottom: 6px; text-transform: uppercase; letter-spacing: .08em; }
+.gafi-rgb-panel { margin-top: 8px; padding-top: 7px; border-top: 1px solid color-mix(in srgb, var(--gafi-muted) 8%, transparent); }
+.gafi-rgb-line { display: grid; grid-template-columns: 18px 1fr 27px; gap: 6px; align-items: center; min-height: 26px; font: 700 9px/1 ui-monospace, SFMono-Regular, Consolas, monospace; }
+.gafi-rgb-value { text-align: right; color: var(--gafi-muted); }
+.gafi-actions { display: flex; justify-content: flex-end; margin-top: 7px; }
+.gafi-secondary-btn { all: unset; cursor: pointer; padding: 9px 11px; border-radius: 10px; color: var(--gafi-muted); background: color-mix(in srgb, var(--gafi-surface) 70%, transparent); border: 1px solid color-mix(in srgb, var(--gafi-muted) 10%, transparent); font-size: 10px; }
+.gafi-secondary-btn:hover { color: var(--gafi-text); border-color: color-mix(in srgb, var(--gafi-accent) 35%, transparent); }
+.gafi-panel-footer { padding: 10px 14px 13px; color: var(--gafi-muted); font-size: 9px; line-height: 1.35; text-align: center; border-top: 1px solid color-mix(in srgb, var(--gafi-muted) 10%, transparent); }
+
+/* Decorative forest layer: optional and deliberately low-contrast so it never blocks reading. */
+#gafi-forest-layer { position: fixed; inset: 0; z-index: -1; pointer-events: none; overflow: hidden; opacity: .45; }
+.gafi-leaf { position: absolute; left: calc((var(--i) * 7.3%) - 4%); top: calc((var(--i) * 13.2%) - 8%); width: var(--size); height: calc(var(--size) * .62); border-radius: 100% 0 100% 0; transform: rotate(var(--rot)); background: color-mix(in srgb, var(--gafi-accent) 36%, transparent); filter: blur(.1px); animation: gafiLeafFloat 14s ease-in-out infinite; animation-delay: var(--delay); }
+.gafi-leaf::after { content: ""; position: absolute; left: 8%; top: 48%; width: 90%; height: 1px; background: color-mix(in srgb, var(--gafi-text) 17%, transparent); transform: rotate(-2deg); transform-origin: left; }
+@keyframes gafiLeafFloat { 0%,100% { translate: 0 0; } 50% { translate: 8px -14px; } }
+
+/* An always-empty-looking right edge is made intentional when forest mode is enabled. */
+html[data-gafi-forest="true"] body::after {
+  content: "";
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(19vw, 260px);
+  pointer-events: none;
+  z-index: -2;
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--gafi-accent) 7%, transparent));
+  opacity: .55;
+}
+
+@media (max-width: 720px) {
+  #gafi-ui-panel { width: calc(100vw - 12px); top: 6px; right: 6px; bottom: 6px; }
+  #gafi-ui-toggle { right: 12px; bottom: 12px; }
+}
