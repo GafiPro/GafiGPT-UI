@@ -37,8 +37,9 @@ html[data-gafi-ui="on"] [style*="backdropFilter"]{
   -webkit-backdrop-filter:none!important;
   backdrop-filter:none!important;
 }
-/* Remove the translucent/glass appearance as well: keep native ChatGPT surfaces opaque. */
-html[data-gafi-ui="on"][data-gafi-glass="true"] body :is(nav,header,footer,[class*="bg-token-main-surface"],[class*="bg-token-sidebar-surface"]){
+
+/* The glass option no longer controls native ChatGPT blur. Native surfaces stay opaque. */
+html[data-gafi-ui="on"] body :is(nav,header,footer,[class*="bg-token-main-surface"],[class*="bg-token-sidebar-surface"]){
   background:var(--gafi-surface)!important;
   background-color:var(--gafi-surface)!important;
 }
@@ -53,19 +54,48 @@ html[data-gafi-ui="on"] body :is(header,nav,aside,footer) :is(button,[role="butt
 /* Semantic markers added by chatgpt-integration.js for areas whose DOM classes change often. */
 html[data-gafi-ui="on"] body [data-gafi-chatgpt-surface="true"],
 html[data-gafi-ui="on"] body [data-gafi-account-surface="true"],
-html[data-gafi-ui="on"] body [data-gafi-search-surface="true"]{
+html[data-gafi-ui="on"] body [data-gafi-search-surface="true"],
+html[data-gafi-ui="on"] body [data-gafi-composer-surface="true"]{
   background:var(--gafi-surface)!important;
   background-color:var(--gafi-surface)!important;
   color:var(--gafi-text)!important;
   -webkit-backdrop-filter:none!important;
   backdrop-filter:none!important;
+  filter:none!important;
 }
+
+/* Kill native pseudo-element fades/gradients on marked shell surfaces. */
+html[data-gafi-ui="on"] body [data-gafi-chatgpt-surface="true"]::before,
+html[data-gafi-ui="on"] body [data-gafi-chatgpt-surface="true"]::after,
+html[data-gafi-ui="on"] body [data-gafi-account-surface="true"]::before,
+html[data-gafi-ui="on"] body [data-gafi-account-surface="true"]::after,
+html[data-gafi-ui="on"] body [data-gafi-composer-surface="true"]::before,
+html[data-gafi-ui="on"] body [data-gafi-composer-surface="true"]::after{
+  background:transparent!important;
+  background-image:none!important;
+  box-shadow:none!important;
+  -webkit-backdrop-filter:none!important;
+  backdrop-filter:none!important;
+  filter:none!important;
+}
+
 html[data-gafi-ui="on"] body [data-gafi-chatgpt-surface="true"] *,
 html[data-gafi-ui="on"] body [data-gafi-account-surface="true"] *{
   color:var(--gafi-text)!important;
 }
 html[data-gafi-ui="on"] body [data-gafi-chatgpt-surface="true"] :is(svg,path),
 html[data-gafi-ui="on"] body [data-gafi-account-surface="true"] :is(svg,path){color:var(--gafi-muted)!important;fill:currentColor;stroke:currentColor}
+
+/* The composer itself remains native-looking, but its surrounding fade/shell follows the theme. */
+html[data-gafi-ui="on"] body [data-gafi-composer="true"]{
+  color:var(--gafi-text)!important;
+  background:transparent!important;
+  -webkit-backdrop-filter:none!important;
+  backdrop-filter:none!important;
+  filter:none!important;
+  box-shadow:none!important;
+}
+html[data-gafi-ui="on"] body [data-gafi-composer="true"]::placeholder{color:var(--gafi-muted)!important;opacity:1!important}
 
 /* Search fields: never inherit the extension's surface/geometry rules in a way that creates the broken bar. */
 html[data-gafi-ui="on"] body [data-gafi-search="true"]{
