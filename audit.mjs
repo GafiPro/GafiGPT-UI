@@ -48,7 +48,8 @@ const wiringChecks = [
   ["root.dataset.gafiAtmosphere = String(Boolean(state.atmosphere));", 'Atmosphere toggle wiring missing'],
   ["'--gafi-atmo-opacity':", 'Atmosphere opacity variable wiring missing'],
   ['function normalizeState(raw)', 'State normalization missing'],
-  ['if (expected === \'none\')', 'Atmosphere disable cleanup missing'],
+  ['function toBoolean(value, fallback)', 'Legacy boolean parsing missing'],
+  ["if (expected === 'none')", 'Atmosphere disable cleanup missing'],
   ['function scheduleDomRepair()', 'DOM repair scheduling missing'],
   ['refreshQueued = true;', 'Apply coalescing missing'],
   ['box-shadow:var(--gafi-shadow),var(--gafi-glow)', 'Panel shadow must follow shadow toggle']
