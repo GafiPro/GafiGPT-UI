@@ -2,6 +2,7 @@ import fs from 'node:fs';
 
 const manifest = JSON.parse(fs.readFileSync('manifest.json', 'utf8'));
 const js = fs.readFileSync('content.js', 'utf8');
+const integration = fs.readFileSync('chatgpt-integration.js', 'utf8');
 const css = fs.readFileSync('styles.css', 'utf8');
 const fixes = fs.readFileSync('fixes.css', 'utf8');
 
@@ -57,25 +58,23 @@ const wiringChecks = [
 for (const [needle, message] of wiringChecks) if (!(js.includes(needle) || css.includes(needle))) throw new Error(message);
 
 const fixSafeguards = [
-  'body *{-webkit-backdrop-filter:none!important;backdrop-filter:none!important}',
-  '#gafi-ui-panel,\nhtml[data-gafi-ui="on"] #gafi-ui-toggle',
-  '[data-testid*="speech"]',
-  'button[aria-label*="microphone" i]',
-  'html[data-gafi-ui="on"] body :is(header,nav,aside)',
-  'background-color:var(--gafi-surface)!important'
+  '-webkit-backdrop-filter:none!important',
+  'backdrop-filter:none!important',
+  '[data-gafi-chatgpt-surface="true"]',
+  '[data-gafi-account-surface="true"]',
+  '[data-gafi-search="true"]',
+  '[data-gafi-search-surface="true"]',
+  'background:var(--gafi-surface)!important'
 ];
 for (const needle of fixSafeguards) {
   if (!fixes.includes(needle)) throw new Error(`Missing native UI safeguard: ${needle}`);
 }
 
-/* GafiGPT UI intentionally has no backdrop blur anywhere. */
-if (/backdrop-filter\s*:\s*blur\s*\(/i.test(css) || /backdrop-filter\s*:\s*blur\s*\(/i.test(fixes)) {
-  throw new Error('Backdrop blur must be completely absent');
-}
-if (/blur\(var\(--gafi-blur\)\)/i.test(css) || /blur\(var\(--gafi-blur\)\)/i.test(fixes)) {
-  throw new Error('Gafi blur variable must not be applied');
-}
-if (!fixes.includes('backdrop-filter:none!important')) throw new Error('Global native blur kill-switch missing');
+/* Runtime policy: native ChatGPT UI must never receive backdrop blur. */
+if (!fixes.includes('ABSOLUTE GLASS KILL-SWITCH')) throw new Error('Runtime blur kill-switch missing');
+if (!integration.includes('data-gafi-search')) throw new Error('Semantic search integration missing');
+if (!integration.includes('data-gafi-chatgpt-surface')) throw new Error('ChatGPT header integration missing');
+if (!integration.includes('data-gafi-account-surface')) throw new Error('Account integration missing');
 
 const forbiddenPatterns = [
   ['if (applying || !document.documentElement)', 'State updates are being dropped behind an apply lock'],
@@ -88,8 +87,9 @@ for (const [needle, message] of forbiddenPatterns) if (css.includes(needle) || f
 if (!manifest.permissions?.includes('storage')) throw new Error('storage permission missing');
 const script = manifest.content_scripts?.[0];
 if (!script?.js?.includes('content.js')) throw new Error('content.js not registered');
+if (!script?.js?.includes('chatgpt-integration.js')) throw new Error('chatgpt-integration.js not registered');
 if (!script?.css?.includes('styles.css')) throw new Error('styles.css not registered');
 if (!script?.css?.includes('fixes.css')) throw new Error('fixes.css not registered');
 if (!manifest.host_permissions?.some(value => value.includes('chatgpt.com'))) throw new Error('chatgpt.com host permission missing');
 
-console.log(`PASS: ${themes.length} themes + ${stateKeys.length} state keys + silent-UI regression guards + zero-backdrop-blur policy + native chrome safeguards + manifest`);
+console.log(`PASS: ${themes.length} themes + ${stateKeys.length} state keys + silent-UI regression guards + runtime zero-backdrop-blur policy + semantic native-chrome integration + manifest`);
