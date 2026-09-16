@@ -96,11 +96,22 @@
     return rgbToHex(a[0] * (1 - amount) + b[0] * amount, a[1] * (1 - amount) + b[1] * amount, a[2] * (1 - amount) + b[2] * amount);
   }
 
+  function toBoolean(value, fallback) {
+    if (typeof value === 'boolean') return value;
+    if (typeof value === 'number') return value !== 0;
+    if (typeof value === 'string') {
+      const normalized = value.trim().toLowerCase();
+      if (['true', '1', 'yes', 'on'].includes(normalized)) return true;
+      if (['false', '0', 'no', 'off', ''].includes(normalized)) return false;
+    }
+    return fallback;
+  }
+
   function normalizeState(raw) {
     const source = raw && typeof raw === 'object' ? raw : {};
     const next = { ...DEFAULTS, ...source };
     if (!Object.prototype.hasOwnProperty.call(THEMES, next.theme)) next.theme = DEFAULTS.theme;
-    BOOLEAN_KEYS.forEach(key => { next[key] = Boolean(next[key]); });
+    BOOLEAN_KEYS.forEach(key => { next[key] = toBoolean(next[key], DEFAULTS[key]); });
     Object.entries(NUMBER_RANGES).forEach(([key, [min, max]]) => { next[key] = clamp(next[key], min, max); });
     COLOR_KEYS.forEach(key => { if (!validHex(next[key])) next[key] = DEFAULTS[key]; });
     return next;
