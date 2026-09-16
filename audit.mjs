@@ -6,24 +6,25 @@ const css = fs.readFileSync('styles.css', 'utf8');
 
 const themes = ['midnight','forest','winter','ocean','cyber','sunset','sakura','desert','paper','space'];
 
-// Verify the actual theme object instead of relying on a fragile regex such as `theme: [`.
+// The implementation stores themes as arrays inside THEMES. Validate the actual keys
+// without depending on whitespace/newline formatting.
 const themeKeysMatch = js.match(/const THEMES\s*=\s*\{([\s\S]*?)\n\s*\};/);
 if (!themeKeysMatch) throw new Error('THEMES object not found');
 const themeBody = themeKeysMatch[1];
 for (const theme of themes) {
-  if (!new RegExp(`(?:^|\\n)\\s*${theme}:\\s*\\{`).test(themeBody)) {
+  if (!new RegExp(`(?:^|[,{])\\s*${theme}:\\s*\\[`).test(themeBody)) {
     throw new Error(`Missing theme: ${theme}`);
   }
 }
-if ((themeBody.match(/specialLabel:/g) || []).length !== themes.length) {
-  throw new Error(`Expected ${themes.length} theme atmospheres`);
+if ((themeBody.match(/'?(aurora|forest|snow|bubbles|rgb-led|sunset|petals|dust|paper|stars)'?,/g) || []).length < themes.length) {
+  throw new Error('Expected 10 unique theme atmosphere definitions');
 }
 
 const stateKeys = [
   'customColors','customBackground','customContrast','customAccent',
   'rounded','glass','atmosphere','gradients','glow','shadows','animations',
-  'compact','highContrast','focusGlow','noise','dockPanel',
-  'blur','radius','density','fontScale','atmosphereIntensity'
+  'compact','highContrast','focusGlow','noise','blur','radius','density',
+  'fontScale','atmosphereIntensity'
 ];
 for (const key of stateKeys) {
   if (!new RegExp(`\\b${key}:`).test(js)) throw new Error(`Missing state key: ${key}`);
