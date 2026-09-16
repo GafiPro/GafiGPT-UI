@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "GafiGPT UI",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "A customizable visual layer for ChatGPT with 10 creative themes, unique optional atmospheres, RGB/HEX color controls, glass, rounded UI and a live design panel.",
   "permissions": ["storage"],
   "host_permissions": ["https://chatgpt.com/*", "https://chat.openai.com/*"],
@@ -9,7 +9,7 @@
     {
       "matches": ["https://chatgpt.com/*", "https://chat.openai.com/*"],
       "js": ["content.js"],
-      "css": ["styles.css"],
+      "css": ["styles.css", "fixes.css"],
       "run_at": "document_idle"
     }
   ],
