@@ -21,64 +21,88 @@ html[data-gafi-ui="on"][data-gafi-scheme="light"] body :is(p,h1,h2,h3,h4,h5,h6,l
 html[data-gafi-ui="on"][data-gafi-scheme="light"] body :is(input,textarea,select,[contenteditable="true"]){color:var(--gafi-text)!important}
 html[data-gafi-ui="on"] body :is(a,[role="link"]){color:var(--gafi-accent)!important}
 
-/* IMPORTANT: never apply blur/backdrop filtering to ChatGPT's native UI. */
+/* ABSOLUTE GLASS KILL-SWITCH: ChatGPT itself must never be backdrop-blurred. */
 html[data-gafi-ui="on"] body *,
 html[data-gafi-ui="on"] body *::before,
 html[data-gafi-ui="on"] body *::after{
   -webkit-backdrop-filter:none!important;
   backdrop-filter:none!important;
 }
-
-/* The Gafi UI itself is also crisp. The blur setting is retained only as legacy state. */
 html[data-gafi-ui="on"] #gafi-ui-panel,
-html[data-gafi-ui="on"] #gafi-ui-toggle{
+html[data-gafi-ui="on"] #gafi-ui-toggle,
+html[data-gafi-ui="on"] [class*="backdrop-blur"],
+html[data-gafi-ui="on"] [class*="backdrop-filter"],
+html[data-gafi-ui="on"] [style*="backdrop-filter"],
+html[data-gafi-ui="on"] [style*="backdropFilter"]{
   -webkit-backdrop-filter:none!important;
   backdrop-filter:none!important;
 }
-
-/* Explicitly neutralize common ChatGPT blur utility classes and inline styles. */
-html[data-gafi-ui="on"] body :is([class*="backdrop-blur"],[class*="backdrop-filter"],[style*="backdrop-filter"],[style*="backdropFilter"]){
-  -webkit-backdrop-filter:none!important;
-  backdrop-filter:none!important;
-}
-
-/* Keep the top-left header and lower-left account/sidebar surfaces inside the active palette. */
-html[data-gafi-ui="on"] body :is(header,nav,aside){
-  background:var(--gafi-surface)!important;
-  background-color:var(--gafi-surface)!important;
-}
-html[data-gafi-ui="on"] body :is([class*="bg-token-main-surface"],[class*="bg-token-sidebar-surface"]){
+/* Remove the translucent/glass appearance as well: keep native ChatGPT surfaces opaque. */
+html[data-gafi-ui="on"][data-gafi-glass="true"] body :is(nav,header,footer,[class*="bg-token-main-surface"],[class*="bg-token-sidebar-surface"]){
   background:var(--gafi-surface)!important;
   background-color:var(--gafi-surface)!important;
 }
 
-/* Replace persistent white native surfaces with the selected palette. */
+/* Theme the real ChatGPT frame surfaces without touching layout geometry. */
+html[data-gafi-ui="on"] body :is(header,nav,aside,footer){
+  color:var(--gafi-text)!important;
+  border-color:color-mix(in srgb,var(--gafi-muted) 18%,transparent)!important;
+}
+html[data-gafi-ui="on"] body :is(header,nav,aside,footer) :is(button,[role="button"],a){color:var(--gafi-text)!important}
+
+/* Semantic markers added by chatgpt-integration.js for areas whose DOM classes change often. */
+html[data-gafi-ui="on"] body [data-gafi-chatgpt-surface="true"],
+html[data-gafi-ui="on"] body [data-gafi-account-surface="true"],
+html[data-gafi-ui="on"] body [data-gafi-search-surface="true"]{
+  background:var(--gafi-surface)!important;
+  background-color:var(--gafi-surface)!important;
+  color:var(--gafi-text)!important;
+  -webkit-backdrop-filter:none!important;
+  backdrop-filter:none!important;
+}
+html[data-gafi-ui="on"] body [data-gafi-chatgpt-surface="true"] *,
+html[data-gafi-ui="on"] body [data-gafi-account-surface="true"] *{
+  color:var(--gafi-text)!important;
+}
+html[data-gafi-ui="on"] body [data-gafi-chatgpt-surface="true"] :is(svg,path),
+html[data-gafi-ui="on"] body [data-gafi-account-surface="true"] :is(svg,path){color:var(--gafi-muted)!important;fill:currentColor;stroke:currentColor}
+
+/* Search fields: never inherit the extension's surface/geometry rules in a way that creates the broken bar. */
+html[data-gafi-ui="on"] body [data-gafi-search="true"]{
+  box-sizing:border-box!important;
+  background:var(--gafi-surface-2)!important;
+  background-color:var(--gafi-surface-2)!important;
+  color:var(--gafi-text)!important;
+  border:1px solid color-mix(in srgb,var(--gafi-muted) 24%,transparent)!important;
+  border-radius:12px!important;
+  box-shadow:none!important;
+  filter:none!important;
+  transform:none!important;
+  outline:none;
+  -webkit-backdrop-filter:none!important;
+  backdrop-filter:none!important;
+}
+html[data-gafi-ui="on"] body [data-gafi-search="true"]::placeholder{color:var(--gafi-muted)!important;opacity:1!important}
+html[data-gafi-ui="on"] body [data-gafi-search-surface="true"]{
+  box-shadow:none!important;
+  filter:none!important;
+  -webkit-backdrop-filter:none!important;
+  backdrop-filter:none!important;
+}
+
+/* Persistent white utility surfaces in the current ChatGPT shell follow the selected palette. */
 html[data-gafi-ui="on"] body :is([class~="bg-white"],[class*="bg-white"],[class*="dark:bg-white"]){
   background-color:var(--gafi-surface)!important;
   color:var(--gafi-text)!important;
 }
+html[data-gafi-ui="on"] body :is(header,nav,aside,footer) :is([class~="text-white"],[class*="text-white"]){color:var(--gafi-text)!important}
 
-/* Voice / speech controls inherit the selected surface. */
-html[data-gafi-ui="on"] body :is(
-  button[aria-label*="voice" i],
-  button[aria-label*="speak" i],
-  button[aria-label*="microphone" i],
-  button[aria-label*="microfone" i],
-  button[aria-label*="dictate" i],
-  button[aria-label*="dictation" i],
-  [data-testid*="voice"],
-  [data-testid*="speech"],
-  [data-testid*="microphone"]
-){
-  background:var(--gafi-surface)!important;
-  background-color:var(--gafi-surface)!important;
-  color:var(--gafi-text)!important;
-  border-color:color-mix(in srgb,var(--gafi-muted) 24%,transparent)!important;
-  box-shadow:none!important;
+/* Inputs and controls stay crisp and theme-aware. */
+html[data-gafi-ui="on"] body :is(input,textarea,select,[contenteditable="true"]){
+  -webkit-backdrop-filter:none!important;
+  backdrop-filter:none!important;
 }
-
-/* Header/sidebar labels that use white utility text must follow the theme too. */
-html[data-gafi-ui="on"] body :is(header,nav,aside) :is([class~="text-white"],[class*="text-white"]){color:var(--gafi-text)!important}
+html[data-gafi-ui="on"][data-gafi-focus-glow="true"] body :is(textarea:focus,[contenteditable="true"]:focus){box-shadow:var(--gafi-glow)!important;border-color:color-mix(in srgb,var(--gafi-accent) 55%,transparent)!important}
 
 /* Animation switch remains independent. */
 html[data-gafi-ui="on"][data-gafi-animations="false"] #gafi-atmosphere-layer,
