@@ -20,49 +20,24 @@ html[data-gafi-ui="on"][data-gafi-glow="false"] #gafi-atmosphere-layer *{box-sha
 
 /* Light schemes use the selected contrast colour instead of ChatGPT's dark text tokens. */
 html[data-gafi-ui="on"][data-gafi-scheme="light"] body :is(p,h1,h2,h3,h4,h5,h6,li,dt,dd,label,blockquote,pre,code,strong,em,button,[role="button"]){color:var(--gafi-text)!important}
-html[data-gafi-ui="on"][data-gafi-scheme="light"] body :is(input,textarea,select,[contenteditable="true"]){color:var(--gafi-text)}
+html[data-gafi-ui="on"][data-gafi-scheme="light"] body :is(input,textarea,select,[contenteditable="true"]){color:var(--gafi-text)!important}
 
 /* The selected palette also controls ordinary links instead of leaving native blue links behind. */
 html[data-gafi-ui="on"] body :is(a,[role="link"]){color:var(--gafi-accent)!important}
 
-/* Never blur native ChatGPT chrome. This removes the persistent top/bottom haze without changing layout. */
-html[data-gafi-ui="on"] body :is(nav,header,footer,
-  [class*="backdrop-blur"],[class*="backdrop-filter"],
-  [style*="backdrop-filter"],[style*="backdropFilter"]){
-  -webkit-backdrop-filter:none!important;
-  backdrop-filter:none!important;
-}
+/* Native ChatGPT blur is fully disabled. The --gafi-blur value is reserved for Gafi controls only. */
+html[data-gafi-ui="on"] body *{-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+html[data-gafi-ui="on"][data-gafi-glass="true"] #gafi-ui-panel,
+html[data-gafi-ui="on"][data-gafi-glass="true"] #gafi-ui-toggle{-webkit-backdrop-filter:blur(var(--gafi-blur)) saturate(140%)!important;backdrop-filter:blur(var(--gafi-blur)) saturate(140%)!important}
+html[data-gafi-ui="on"][data-gafi-glass="false"] #gafi-ui-panel,
+html[data-gafi-ui="on"][data-gafi-glass="false"] #gafi-ui-toggle{-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
 
-html[data-gafi-ui="on"] body :is(nav,header,footer){
-  background-color:var(--gafi-surface)!important;
-}
+/* Native controls rendered with white utility classes follow the active theme. */
+html[data-gafi-ui="on"] body :is(button[class*="bg-white"],[role="button"][class*="bg-white"],[class~="bg-white"],[class*=" dark:bg-white"]){background-color:var(--gafi-surface)!important;color:var(--gafi-text)!important}
+html[data-gafi-ui="on"] body :is(button[aria-label*="voice" i],button[aria-label*="speak" i],button[aria-label*="microphone" i],button[aria-label*="microfone" i],[data-testid*="speech"],[data-testid*="voice"]){background-color:var(--gafi-surface)!important;color:var(--gafi-text)!important;border-color:color-mix(in srgb,var(--gafi-muted) 24%,transparent)!important;box-shadow:none!important}
 
-/* The composer region must stay crisp and above the decorative atmosphere. */
-html[data-gafi-ui="on"] body :is(form,[role="search"],textarea,[contenteditable="true"]){
-  -webkit-backdrop-filter:none!important;
-  backdrop-filter:none!important;
-}
-
-/* Voice controls should follow the selected surface instead of retaining a white native fill. */
-html[data-gafi-ui="on"] body :is(
-  [data-testid*="speech"],
-  [data-testid*="voice"],
-  button[aria-label*="voice" i],
-  button[aria-label*="speak" i],
-  button[aria-label*="microphone" i],
-  button[aria-label*="microfone" i]
-){
-  background-color:var(--gafi-surface)!important;
-  color:var(--gafi-text)!important;
-  border-color:color-mix(in srgb,var(--gafi-muted) 24%,transparent)!important;
-  box-shadow:none;
-}
-
-/* Lower-left/sidebar chrome must not retain a native translucent blur. */
-html[data-gafi-ui="on"] body :is(aside,nav) :is([class*="backdrop-blur"],[class*="backdrop-filter"]){
-  -webkit-backdrop-filter:none!important;
-  backdrop-filter:none!important;
-}
+/* Keep header/sidebar labels visible with the selected text colour. */
+html[data-gafi-ui="on"] body :is(header,nav,aside) :is([class*="text-white"],[class~="text-white"]){color:var(--gafi-text)!important}
 
 /* Reduced motion remains independent from the native ChatGPT accessibility setting. */
 html[data-gafi-ui="on"][data-gafi-animations="false"] #gafi-atmosphere-layer,
