@@ -8,47 +8,30 @@
     chatgpt: /^chatgpt$/i,
   };
 
-  function textOf(node) {
-    return [
-      node.textContent || '',
-      node.getAttribute?.('aria-label') || '',
-      node.getAttribute?.('title') || '',
-      node.getAttribute?.('placeholder') || '',
-      node.getAttribute?.('data-testid') || ''
-    ].join(' ').replace(/\s+/g, ' ').trim();
-  }
+  const MARKERS = ['gafiSearchSurface','gafiChatgptSurface','gafiAccountSurface','gafiComposerSurface'];
+  const attrFor = key => `data-${key.replace(/[A-Z]/g, m => `-${m.toLowerCase()}`)}`;
 
-  function attrFor(key) {
-    return `data-${key.replace(/[A-Z]/g, m => `-${m.toLowerCase()}`)}`;
+  function textOf(node) {
+    return [node.textContent || '', node.getAttribute?.('aria-label') || '', node.getAttribute?.('title') || '', node.getAttribute?.('placeholder') || '', node.getAttribute?.('data-testid') || '']
+      .join(' ').replace(/\s+/g, ' ').trim();
   }
 
   function clearMarkers() {
-    const selector = [
-      'gafiSearchSurface','gafiChatgptSurface','gafiAccountSurface','gafiComposerSurface'
-    ].map(attrFor).map(attr => `[${attr}="true"]`).join(',');
-    document.querySelectorAll(selector).forEach(node => {
-      ['gafiSearchSurface','gafiChatgptSurface','gafiAccountSurface','gafiComposerSurface'].forEach(key => node.removeAttribute(attrFor(key)));
-    });
-    document.querySelectorAll('[data-gafi-search="true"],[data-gafi-composer="true"]').forEach(node => {
+    const selector = MARKERS.map(key => `[${attrFor(key)}="true"]`).join(',');
+    document.querySelectorAll(selector).forEach(node => MARKERS.forEach(key => node.removeAttribute(attrFor(key))));
+    document.querySelectorAll('[data-gafi-search],[data-gafi-composer]').forEach(node => {
       node.removeAttribute('data-gafi-search');
       node.removeAttribute('data-gafi-composer');
     });
   }
 
-  function surfaceChain(node, predicate, maxDepth = 8) {
+  function walkAncestors(node, callback, maxDepth = 10) {
     let current = node instanceof Element ? node : node?.parentElement;
-    let best = null;
     for (let depth = 0; current && depth < maxDepth; depth += 1, current = current.parentElement) {
       if (!(current instanceof HTMLElement)) continue;
       const rect = current.getBoundingClientRect();
-      if (!rect.width || !rect.height) continue;
-      const style = getComputedStyle(current);
-      const area = rect.width * rect.height;
-      const fixedLike = style.position === 'fixed' || style.position === 'sticky';
-      if (predicate(current, rect, style, fixedLike, area)) best = current;
-      if (['header', 'nav', 'aside'].includes(current.tagName.toLowerCase())) return current;
+      if (rect.width && rect.height) callback(current, rect, getComputedStyle(current), depth);
     }
-    return best;
   }
 
   function markComposer() {
@@ -56,12 +39,28 @@
       const meta = textOf(node);
       if (!WORDS.composer.test(meta)) return;
       node.dataset.gafiComposer = 'true';
-      const surface = surfaceChain(node, (el, rect, style, fixedLike) => {
-        if (rect.width < 350 || rect.height < 55) return false;
-        return fixedLike && rect.bottom > window.innerHeight - 300 ||
-          rect.bottom > window.innerHeight - 230 && rect.width > window.innerWidth * 0.35;
+
+      let marked = false;
+      walkAncestors(node, (el, rect, style, depth) => {
+        if (marked) return;
+        const fixedLike = style.position === 'fixed' || style.position === 'sticky';
+        const bottomZone = rect.bottom >= window.innerHeight - 320;
+        const wideEnough = rect.width >= Math.max(350, window.innerWidth * 0.35);
+        if (fixedLike && bottomZone && wideEnough) {
+          el.dataset.gafiComposerSurface = 'true';
+          marked = true;
+        }
       });
-      if (surface) surface.dataset.gafiComposerSurface = 'true';
+
+      if (!marked) {
+        walkAncestors(node, (el, rect, style, depth) => {
+          if (marked || depth < 1) return;
+          if (rect.bottom >= window.innerHeight - 230 && rect.width >= Math.max(350, window.innerWidth * 0.35) && rect.height >= 55) {
+            el.dataset.gafiComposerSurface = 'true';
+            marked = true;
+          }
+        });
+      }
     });
   }
 
@@ -70,8 +69,9 @@
       const meta = textOf(node);
       if (!WORDS.search.test(meta) || WORDS.composer.test(meta)) return;
       node.dataset.gafiSearch = 'true';
-      const surface = surfaceChain(node, (el, rect) => rect.width >= 180 && rect.height >= 36);
-      if (surface) surface.dataset.gafiSearchSurface = 'true';
+      walkAncestors(node, (el, rect, style, depth) => {
+        if (!el.hasAttribute(attrFor('gafiSearchSurface')) && rect.width >= 180 && rect.height >= 36 && depth <= 5) el.dataset.gafiSearchSurface = 'true';
+      }, 5);
       const dialog = node.closest('[role="dialog"]');
       if (dialog) dialog.dataset.gafiSearchSurface = 'true';
     });
@@ -86,19 +86,29 @@
       if (!text || text.length > 120) continue;
 
       if (WORDS.chatgpt.test(text)) {
-        const surface = surfaceChain(node, (el, rect) => {
-          return rect.left <= Math.min(40, window.innerWidth * 0.04) &&
-            rect.top <= 90 && rect.height >= 40 && rect.width >= 180 && rect.width < window.innerWidth * 0.5;
-        });
-        if (surface) surface.dataset.gafiChatgptSurface = 'true';
+        let marked = false;
+        walkAncestors(node, (el, rect, style, depth) => {
+          if (marked) return;
+          const topLeft = rect.left <= Math.min(40, window.innerWidth * 0.04) && rect.top <= 90;
+          const sensible = rect.height >= 40 && rect.width >= 180 && rect.width < window.innerWidth * 0.5;
+          if (topLeft && sensible) {
+            el.dataset.gafiChatgptSurface = 'true';
+            marked = true;
+          }
+        }, 10);
       }
 
       if (WORDS.account.test(text)) {
-        const surface = surfaceChain(node, (el, rect) => {
-          return rect.left <= Math.min(40, window.innerWidth * 0.04) &&
-            rect.bottom >= window.innerHeight - 45 && rect.width >= 180 && rect.height >= 70 && rect.width < window.innerWidth * 0.5;
-        });
-        if (surface) surface.dataset.gafiAccountSurface = 'true';
+        let marked = false;
+        walkAncestors(node, (el, rect, style, depth) => {
+          if (marked) return;
+          const bottomLeft = rect.left <= Math.min(40, window.innerWidth * 0.04) && rect.bottom >= window.innerHeight - 45;
+          const sensible = rect.width >= 180 && rect.width < window.innerWidth * 0.5 && rect.height >= 70;
+          if (bottomLeft && sensible) {
+            el.dataset.gafiAccountSurface = 'true';
+            marked = true;
+          }
+        }, 10);
       }
     }
   }
@@ -115,17 +125,13 @@
   function queueRepair() {
     if (queued) return;
     queued = true;
-    requestAnimationFrame(() => {
-      queued = false;
-      repair();
-    });
+    requestAnimationFrame(() => { queued = false; repair(); });
   }
 
   const observer = new MutationObserver(queueRepair);
 
   function start() {
     repair();
-    /* Watch DOM insertion/replacement, not our own data attributes, to avoid observer feedback loops. */
     observer.observe(document.body, { childList: true, subtree: true });
   }
 
