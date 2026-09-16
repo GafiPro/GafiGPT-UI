@@ -45,8 +45,8 @@ for (const selector of cssSafeguards) {
 if (!js.includes("root.dataset.gafiAtmosphere = String(Boolean(state.atmosphere));")) {
   throw new Error('Atmosphere toggle wiring missing');
 }
-if (!js.includes("root.style.setProperty('--gafi-atmo-opacity'")) {
-  throw new Error('Atmosphere opacity wiring missing');
+if (!js.includes("'--gafi-atmo-opacity':")) {
+  throw new Error('Atmosphere opacity variable wiring missing');
 }
 
 const fixSafeguards = [
