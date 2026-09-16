@@ -57,30 +57,31 @@ const wiringChecks = [
 ];
 for (const [needle, message] of wiringChecks) if (!(js.includes(needle) || css.includes(needle))) throw new Error(message);
 
-if (!fixes.includes('-webkit-backdrop-filter:none!important')) throw new Error('Native webkit backdrop blur kill-switch missing');
-if (!fixes.includes('backdrop-filter:none!important')) throw new Error('Native backdrop blur kill-switch missing');
-if (!fixes.includes('[data-gafi-chatgpt-surface="true"]')) throw new Error('ChatGPT header surface safeguard missing');
-if (!fixes.includes('[data-gafi-account-surface="true"]')) throw new Error('Account surface safeguard missing');
-if (!fixes.includes('[data-gafi-composer-surface="true"]')) throw new Error('Composer surface safeguard missing');
-if (!fixes.includes('[data-gafi-composer="true"]')) throw new Error('Composer field safeguard missing');
-if (!fixes.includes('[data-gafi-search="true"]')) throw new Error('Search field safeguard missing');
-if (!fixes.includes('[data-gafi-search-surface="true"]')) throw new Error('Search surface safeguard missing');
-if (!fixes.includes('background:var(--gafi-surface)!important')) throw new Error('Theme surface fallback missing');
+const fixChecks = [
+  ['-webkit-backdrop-filter:none!important', 'Native webkit backdrop blur kill-switch missing'],
+  ['backdrop-filter:none!important', 'Native backdrop blur kill-switch missing'],
+  ['[data-gafi-chatgpt-surface="true"]', 'ChatGPT header surface safeguard missing'],
+  ['[data-gafi-account-surface="true"]', 'Account surface safeguard missing'],
+  ['[data-gafi-composer-surface="true"]', 'Composer surface safeguard missing'],
+  ['[data-gafi-composer="true"]', 'Composer field safeguard missing'],
+  ['[data-gafi-search="true"]', 'Search field safeguard missing'],
+  ['[data-gafi-search-surface="true"]', 'Search surface safeguard missing'],
+  ['background:var(--gafi-surface)!important', 'Theme surface fallback missing']
+];
+for (const [needle, message] of fixChecks) if (!fixes.includes(needle)) throw new Error(message);
 
-/* Blur is forbidden at runtime, including the original glass implementation. */
-if (/backdrop-filter\s*:\s*blur\s*\(/i.test(css) || /backdrop-filter\s*:\s*blur\s*\(/i.test(fixes)) {
-  throw new Error('Backdrop blur must be completely absent');
-}
-if (/blur\(var\(--gafi-blur\)\)/i.test(css) || /blur\(var\(--gafi-blur\)\)/i.test(fixes)) {
-  throw new Error('Gafi blur variable must not be applied');
-}
+/* Runtime zero-blur policy: the last stylesheet loaded must override native and extension backdrop filters. */
+if (!fixes.includes('ABSOLUTE GLASS KILL-SWITCH')) throw new Error('Runtime blur kill-switch missing');
+if (/backdrop-filter\s*:\s*blur\s*\(/i.test(fixes)) throw new Error('fixes.css must not introduce backdrop blur');
+if (/blur\(var\(--gafi-blur\)\)/i.test(fixes)) throw new Error('fixes.css must not apply the legacy blur variable');
 
-/* Runtime semantic integration. */
+/* Semantic integration must be DOM-safe and must not observe its own marker churn. */
 if (!integration.includes('data-gafi-search')) throw new Error('Semantic search integration missing');
 if (!integration.includes('data-gafi-chatgpt-surface')) throw new Error('ChatGPT header integration missing');
 if (!integration.includes('data-gafi-account-surface')) throw new Error('Account integration missing');
 if (!integration.includes('data-gafi-composer-surface')) throw new Error('Composer integration missing');
 if (!integration.includes('childList: true')) throw new Error('DOM replacement observer missing');
+if (integration.includes("attributeFilter: ['class', 'aria-label', 'placeholder', 'title', 'data-testid']")) throw new Error('Semantic observer must not watch mutation-prone attributes');
 
 const forbiddenPatterns = [
   ['if (applying || !document.documentElement)', 'State updates are being dropped behind an apply lock'],
@@ -98,4 +99,4 @@ if (!script?.css?.includes('styles.css')) throw new Error('styles.css not regist
 if (!script?.css?.includes('fixes.css')) throw new Error('fixes.css not registered');
 if (!manifest.host_permissions?.some(value => value.includes('chatgpt.com'))) throw new Error('chatgpt.com host permission missing');
 
-console.log(`PASS: ${themes.length} themes + ${stateKeys.length} state keys + semantic shell/composer guards + zero-backdrop-blur policy + native chrome safeguards + manifest`);
+console.log(`PASS: ${themes.length} themes + ${stateKeys.length} state keys + semantic shell/composer guards + runtime zero-backdrop-blur override + native chrome safeguards + manifest`);
