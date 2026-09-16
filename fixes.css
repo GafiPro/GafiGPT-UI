@@ -1,11 +1,9 @@
-/* GafiGPT UI — integration safeguards. Blur is intentionally disabled everywhere. */
+/* GafiGPT UI — integration safeguards. Native ChatGPT glass/fade is disabled. */
 
-/* Keep atmospheric art decorative and non-interactive. */
 html[data-gafi-ui="on"] #gafi-atmosphere-layer,
 html[data-gafi-ui="on"] #gafi-atmosphere-layer::before,
 html[data-gafi-ui="on"] #gafi-atmosphere-layer::after{pointer-events:none!important}
 
-/* When effects are disabled, the extension must stop painting them. */
 html[data-gafi-ui="on"][data-gafi-atmosphere="false"] #gafi-atmosphere-layer{display:none!important}
 html[data-gafi-ui="on"][data-gafi-gradients="false"] body::before{background:none!important;opacity:0!important}
 html[data-gafi-ui="on"][data-gafi-glow="false"] #gafi-ui-toggle,
@@ -16,12 +14,11 @@ html[data-gafi-ui="on"][data-gafi-glow="false"] #gafi-ui-panel,
 html[data-gafi-ui="on"][data-gafi-glow="false"] .gafi-theme-card.is-active{box-shadow:none!important}
 html[data-gafi-ui="on"][data-gafi-glow="false"] #gafi-atmosphere-layer *{box-shadow:none!important}
 
-/* Theme-aware typography. */
 html[data-gafi-ui="on"][data-gafi-scheme="light"] body :is(p,h1,h2,h3,h4,h5,h6,li,dt,dd,label,blockquote,pre,code,strong,em,button,[role="button"]){color:var(--gafi-text)!important}
 html[data-gafi-ui="on"][data-gafi-scheme="light"] body :is(input,textarea,select,[contenteditable="true"]){color:var(--gafi-text)!important}
 html[data-gafi-ui="on"] body :is(a,[role="link"]){color:var(--gafi-accent)!important}
 
-/* ABSOLUTE GLASS KILL-SWITCH: ChatGPT itself must never be backdrop-blurred. */
+/* Absolute native glass kill-switch. */
 html[data-gafi-ui="on"] body *,
 html[data-gafi-ui="on"] body *::before,
 html[data-gafi-ui="on"] body *::after{
@@ -38,55 +35,65 @@ html[data-gafi-ui="on"] [style*="backdropFilter"]{
   backdrop-filter:none!important;
 }
 
-/* The glass option no longer controls native ChatGPT blur. Native surfaces stay opaque. */
+/* Native frame surfaces use the selected palette and stay opaque. */
 html[data-gafi-ui="on"] body :is(nav,header,footer,[class*="bg-token-main-surface"],[class*="bg-token-sidebar-surface"]){
   background:var(--gafi-surface)!important;
   background-color:var(--gafi-surface)!important;
+  color:var(--gafi-text)!important;
 }
-
-/* Theme the real ChatGPT frame surfaces without touching layout geometry. */
 html[data-gafi-ui="on"] body :is(header,nav,aside,footer){
   color:var(--gafi-text)!important;
   border-color:color-mix(in srgb,var(--gafi-muted) 18%,transparent)!important;
 }
 html[data-gafi-ui="on"] body :is(header,nav,aside,footer) :is(button,[role="button"],a){color:var(--gafi-text)!important}
 
-/* Semantic markers added by chatgpt-integration.js for areas whose DOM classes change often. */
+/* Dynamically identified ChatGPT shells. */
 html[data-gafi-ui="on"] body [data-gafi-chatgpt-surface="true"],
 html[data-gafi-ui="on"] body [data-gafi-account-surface="true"],
 html[data-gafi-ui="on"] body [data-gafi-search-surface="true"],
-html[data-gafi-ui="on"] body [data-gafi-composer-surface="true"]{
+html[data-gafi-ui="on"] body [data-gafi-composer-surface="true"],
+html[data-gafi-ui="on"] body [data-gafi-top-chrome-surface="true"]{
   background:var(--gafi-surface)!important;
   background-color:var(--gafi-surface)!important;
   color:var(--gafi-text)!important;
+  opacity:1!important;
+  filter:none!important;
   -webkit-backdrop-filter:none!important;
   backdrop-filter:none!important;
-  filter:none!important;
+  mask-image:none!important;
+  -webkit-mask-image:none!important;
 }
 
-/* Kill native pseudo-element fades/gradients on marked shell surfaces. */
+/* Kill the gradient/fade/blur layers that ChatGPT can put on shell pseudo-elements. */
 html[data-gafi-ui="on"] body [data-gafi-chatgpt-surface="true"]::before,
 html[data-gafi-ui="on"] body [data-gafi-chatgpt-surface="true"]::after,
 html[data-gafi-ui="on"] body [data-gafi-account-surface="true"]::before,
 html[data-gafi-ui="on"] body [data-gafi-account-surface="true"]::after,
 html[data-gafi-ui="on"] body [data-gafi-composer-surface="true"]::before,
-html[data-gafi-ui="on"] body [data-gafi-composer-surface="true"]::after{
-  background:transparent!important;
+html[data-gafi-ui="on"] body [data-gafi-composer-surface="true"]::after,
+html[data-gafi-ui="on"] body [data-gafi-top-chrome-surface="true"]::before,
+html[data-gafi-ui="on"] body [data-gafi-top-chrome-surface="true"]::after{
+  content:none!important;
+  background:none!important;
   background-image:none!important;
   box-shadow:none!important;
+  filter:none!important;
+  opacity:1!important;
   -webkit-backdrop-filter:none!important;
   backdrop-filter:none!important;
-  filter:none!important;
+  mask-image:none!important;
+  -webkit-mask-image:none!important;
 }
 
+/* Text/icons in account and top chrome must inherit the active theme. */
 html[data-gafi-ui="on"] body [data-gafi-chatgpt-surface="true"] *,
-html[data-gafi-ui="on"] body [data-gafi-account-surface="true"] *{
-  color:var(--gafi-text)!important;
-}
+html[data-gafi-ui="on"] body [data-gafi-account-surface="true"] *,
+html[data-gafi-ui="on"] body [data-gafi-top-chrome-surface="true"] *{color:var(--gafi-text)!important}
 html[data-gafi-ui="on"] body [data-gafi-chatgpt-surface="true"] :is(svg,path),
-html[data-gafi-ui="on"] body [data-gafi-account-surface="true"] :is(svg,path){color:var(--gafi-muted)!important;fill:currentColor;stroke:currentColor}
+html[data-gafi-ui="on"] body [data-gafi-account-surface="true"] :is(svg,path),
+html[data-gafi-ui="on"] body [data-gafi-top-chrome-surface="true"] :is(svg,path){color:var(--gafi-muted)!important;fill:currentColor;stroke:currentColor}
 
-/* The composer itself remains native-looking, but its surrounding fade/shell follows the theme. */
+/* Composer input itself stays native, without the broken translucent treatment. */
 html[data-gafi-ui="on"] body [data-gafi-composer="true"]{
   color:var(--gafi-text)!important;
   background:transparent!important;
@@ -97,7 +104,7 @@ html[data-gafi-ui="on"] body [data-gafi-composer="true"]{
 }
 html[data-gafi-ui="on"] body [data-gafi-composer="true"]::placeholder{color:var(--gafi-muted)!important;opacity:1!important}
 
-/* Search fields: never inherit the extension's surface/geometry rules in a way that creates the broken bar. */
+/* Search fields are deliberately excluded from blanket geometry overrides. */
 html[data-gafi-ui="on"] body [data-gafi-search="true"]{
   box-sizing:border-box!important;
   background:var(--gafi-surface-2)!important;
@@ -120,20 +127,18 @@ html[data-gafi-ui="on"] body [data-gafi-search-surface="true"]{
   backdrop-filter:none!important;
 }
 
-/* Persistent white utility surfaces in the current ChatGPT shell follow the selected palette. */
+/* Persistent light utility surfaces follow the active palette. */
 html[data-gafi-ui="on"] body :is([class~="bg-white"],[class*="bg-white"],[class*="dark:bg-white"]){
   background-color:var(--gafi-surface)!important;
   color:var(--gafi-text)!important;
 }
 html[data-gafi-ui="on"] body :is(header,nav,aside,footer) :is([class~="text-white"],[class*="text-white"]){color:var(--gafi-text)!important}
 
-/* Inputs and controls stay crisp and theme-aware. */
 html[data-gafi-ui="on"] body :is(input,textarea,select,[contenteditable="true"]){
   -webkit-backdrop-filter:none!important;
   backdrop-filter:none!important;
 }
 html[data-gafi-ui="on"][data-gafi-focus-glow="true"] body :is(textarea:focus,[contenteditable="true"]:focus){box-shadow:var(--gafi-glow)!important;border-color:color-mix(in srgb,var(--gafi-accent) 55%,transparent)!important}
 
-/* Animation switch remains independent. */
 html[data-gafi-ui="on"][data-gafi-animations="false"] #gafi-atmosphere-layer,
 html[data-gafi-ui="on"][data-gafi-animations="false"] #gafi-atmosphere-layer *{animation:none!important}
