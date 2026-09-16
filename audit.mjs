@@ -57,18 +57,13 @@ const wiringChecks = [
 ];
 for (const [needle, message] of wiringChecks) if (!(js.includes(needle) || css.includes(needle))) throw new Error(message);
 
-const fixSafeguards = [
-  '-webkit-backdrop-filter:none!important',
-  'backdrop-filter:none!important',
-  '[data-gafi-chatgpt-surface="true"]',
-  '[data-gafi-account-surface="true"]',
-  '[data-gafi-search="true"]',
-  '[data-gafi-search-surface="true"]',
-  'background:var(--gafi-surface)!important'
-];
-for (const needle of fixSafeguards) {
-  if (!fixes.includes(needle)) throw new Error(`Missing native UI safeguard: ${needle}`);
-}
+if (!fixes.includes('-webkit-backdrop-filter:none!important')) throw new Error('Native webkit backdrop blur kill-switch missing');
+if (!fixes.includes('backdrop-filter:none!important')) throw new Error('Native backdrop blur kill-switch missing');
+if (!fixes.includes('[data-gafi-chatgpt-surface="true"]')) throw new Error('ChatGPT header surface safeguard missing');
+if (!fixes.includes('[data-gafi-account-surface="true"]')) throw new Error('Account surface safeguard missing');
+if (!fixes.includes('[data-gafi-search="true"]')) throw new Error('Search field safeguard missing');
+if (!fixes.includes('[data-gafi-search-surface="true"]')) throw new Error('Search surface safeguard missing');
+if (!fixes.includes('background:var(--gafi-surface)!important')) throw new Error('Theme surface fallback missing');
 
 /* Runtime policy: native ChatGPT UI must never receive backdrop blur. */
 if (!fixes.includes('ABSOLUTE GLASS KILL-SWITCH')) throw new Error('Runtime blur kill-switch missing');
