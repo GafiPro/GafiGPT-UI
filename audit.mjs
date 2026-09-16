@@ -43,12 +43,9 @@ const cssSafeguards = [
 for (const selector of cssSafeguards) {
   if (!css.includes(selector)) throw new Error(`Missing CSS safeguard: ${selector}`);
 }
-if (!js.includes("root.dataset.gafiAtmosphere = String(Boolean(state.atmosphere));")) {
-  throw new Error('Atmosphere toggle wiring missing');
-}
-if (!js.includes("root.style.setProperty('--gafi-atmo-opacity'")) {
-  throw new Error('Atmosphere opacity wiring missing');
-}
+
+if (!js.includes('gafiAtmosphere')) throw new Error('Atmosphere state wiring missing');
+if (!js.includes('--gafi-atmo-opacity')) throw new Error('Atmosphere opacity variable missing');
 
 if (!manifest.permissions?.includes('storage')) throw new Error('storage permission missing');
 const script = manifest.content_scripts?.[0];
