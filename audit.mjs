@@ -56,6 +56,17 @@ const wiringChecks = [
 ];
 for (const [needle, message] of wiringChecks) if (!(js.includes(needle) || css.includes(needle))) throw new Error(message);
 
+const fixSafeguards = [
+  'backdrop-filter:none!important',
+  '[class*="backdrop-blur"]',
+  '[data-testid*="speech"]',
+  'button[aria-label*="microphone" i]',
+  'html[data-gafi-ui="on"] body :is(nav,header,footer){'
+];
+for (const needle of fixSafeguards) {
+  if (!fixes.includes(needle)) throw new Error(`Missing native UI safeguard: ${needle}`);
+}
+
 const forbiddenPatterns = [
   ['if (applying || !document.documentElement)', 'State updates are being dropped behind an apply lock'],
   ['body > :not(#gafi-atmosphere-layer)', 'Global body child z-index hack can break ChatGPT stacking'],
@@ -71,4 +82,4 @@ if (!script?.css?.includes('styles.css')) throw new Error('styles.css not regist
 if (!script?.css?.includes('fixes.css')) throw new Error('fixes.css not registered');
 if (!manifest.host_permissions?.some(value => value.includes('chatgpt.com'))) throw new Error('chatgpt.com host permission missing');
 
-console.log(`PASS: ${themes.length} themes + ${stateKeys.length} state keys + silent-UI regression guards + manifest`);
+console.log(`PASS: ${themes.length} themes + ${stateKeys.length} state keys + silent-UI regression guards + native chrome safeguards + manifest`);
