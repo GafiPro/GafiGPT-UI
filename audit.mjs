@@ -16,8 +16,9 @@ for (const theme of themes) {
     throw new Error(`Missing theme: ${theme}`);
   }
 }
-if ((themeBody.match(/'?(aurora|forest|snow|bubbles|rgb-led|sunset|petals|dust|paper|stars)'?,/g) || []).length < themes.length) {
-  throw new Error('Expected 10 unique theme atmosphere definitions');
+const atmosphereIds = ['aurora','forest','snow','bubbles','rgb-led','sunset','petals','dust','paper','stars'];
+for (const atmosphere of atmosphereIds) {
+  if (!themeBody.includes(`'${atmosphere}'`)) throw new Error(`Missing atmosphere: ${atmosphere}`);
 }
 
 const stateKeys = [
@@ -36,11 +37,17 @@ const cssSafeguards = [
   'data-gafi-noise="true"',
   'data-gafi-scheme="light"',
   'data-gafi-special="snow"',
-  'data-gafi-atmosphere="false"',
+  '--gafi-atmo-opacity:',
   'data-gafi-animations="false"'
 ];
 for (const selector of cssSafeguards) {
   if (!css.includes(selector)) throw new Error(`Missing CSS safeguard: ${selector}`);
+}
+if (!js.includes("root.dataset.gafiAtmosphere = String(Boolean(state.atmosphere));")) {
+  throw new Error('Atmosphere toggle wiring missing');
+}
+if (!js.includes("root.style.setProperty('--gafi-atmo-opacity'")) {
+  throw new Error('Atmosphere opacity wiring missing');
 }
 
 if (!manifest.permissions?.includes('storage')) throw new Error('storage permission missing');
