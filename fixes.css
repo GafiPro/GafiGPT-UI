@@ -1,60 +1,30 @@
-/* GafiGPT UI — safe ChatGPT integration fixes */
+/* GafiGPT UI — integration safeguards kept intentionally small. */
 
-/* Keep atmospheric art behind ChatGPT instead of painting over the UI. */
-html[data-gafi-ui="on"] body::before{
-  z-index:0!important;
-  opacity:.55!important;
-  background:radial-gradient(circle at 82% 12%,color-mix(in srgb,var(--gafi-accent) 14%,transparent),transparent 34%),radial-gradient(circle at 18% 86%,color-mix(in srgb,var(--gafi-accent-2) 9%,transparent),transparent 30%)!important;
-}
-html[data-gafi-ui="on"][data-gafi-gradients="false"] body::before{background:none!important;opacity:0!important}
-html[data-gafi-ui="on"] #gafi-atmosphere-layer{z-index:0!important}
-html[data-gafi-ui="on"] body > :not(#gafi-atmosphere-layer):not(#gafi-ui-panel):not(#gafi-ui-toggle){position:relative;z-index:2}
-
-/* Theme the actual readable text, not just ChatGPT's current utility class names. */
-html[data-gafi-ui="on"] body :is(p,h1,h2,h3,h4,h5,h6,li,dt,dd,label,blockquote,pre,code,strong,em){color:var(--gafi-text)!important}
-html[data-gafi-ui="on"] body :is([class*="text-token-text-primary"],[class*="text-token-text"]){color:var(--gafi-text)!important}
-html[data-gafi-ui="on"] body :is([class*="text-token-text-secondary"],[class*="text-secondary"],[class*="text-muted"]){color:var(--gafi-muted)!important}
-html[data-gafi-ui="on"] body :is(button,[role="button"]){color:var(--gafi-text)!important}
-
-/* Inputs/search/composer: use solid themed surfaces instead of global glass. */
-html[data-gafi-ui="on"] body :is(input:not([type="checkbox"]):not([type="radio"]),textarea,select,[contenteditable="true"]){
-  color:var(--gafi-text)!important;
-  background:var(--gafi-surface)!important;
-  border-color:color-mix(in srgb,var(--gafi-muted) 24%,transparent)!important;
-  -webkit-backdrop-filter:none!important;
-  backdrop-filter:none!important;
-}
-html[data-gafi-ui="on"] body :is(input,textarea)::placeholder{color:var(--gafi-muted)!important;opacity:.82!important}
-html[data-gafi-ui="on"] body :is(input,textarea,select,[contenteditable="true"]):focus{
-  background:var(--gafi-surface-2)!important;
-}
-html[data-gafi-ui="on"] body :is([role="combobox"],[role="searchbox"]){
-  color:var(--gafi-text)!important;
-  background:var(--gafi-surface)!important;
-  border-color:color-mix(in srgb,var(--gafi-muted) 22%,transparent)!important;
-}
-
-/* Neutral ChatGPT surfaces follow the selected theme but leave controls readable. */
-html[data-gafi-ui="on"] body :is([class*="bg-token-main-surface"],[class*="bg-token-sidebar-surface"],[class*="bg-gray"],[class*="bg-zinc"],[class*="bg-neutral"],[class*="bg-slate"],[class*="bg-stone"]):not(input):not(textarea):not(select){
-  background-color:color-mix(in srgb,var(--gafi-surface) 94%,var(--gafi-bg))!important;
-}
-
-/* Light themes need dark readable text throughout. */
-html[data-gafi-ui="on"][data-gafi-scheme="light"] body :is(p,h1,h2,h3,h4,h5,h6,li,dt,dd,label,blockquote,pre,code,strong,em,button,[role="button"]){color:var(--gafi-text)!important}
-html[data-gafi-ui="on"][data-gafi-scheme="light"] body :is(input,textarea,select,[contenteditable="true"]){color:var(--gafi-text)!important}
-
-/* Do not let the optional atmosphere become horizontal bars/lines over content. */
+/* Keep the atmospheric layer decorative and non-interactive. */
+html[data-gafi-ui="on"] #gafi-atmosphere-layer,
 html[data-gafi-ui="on"] #gafi-atmosphere-layer::before,
-html[data-gafi-ui="on"] #gafi-atmosphere-layer::after{pointer-events:none}
-html[data-gafi-ui="on"][data-gafi-special="aurora"] #gafi-atmosphere-layer::before,
-html[data-gafi-ui="on"][data-gafi-special="aurora"] #gafi-atmosphere-layer::after{opacity:.16!important;height:8vw!important;filter:blur(52px)!important}
-html[data-gafi-ui="on"][data-gafi-special="rgb-led"] #gafi-atmosphere-layer::before{opacity:.7!important}
+html[data-gafi-ui="on"] #gafi-atmosphere-layer::after{
+  pointer-events:none!important;
+}
 
-/* Theme-specific readable accents. */
-html[data-gafi-ui="on"][data-gafi-theme="winter"] body :is(a,[role="link"]){color:var(--gafi-accent)!important}
-html[data-gafi-ui="on"][data-gafi-theme="ocean"] body :is(a,[role="link"]){color:var(--gafi-accent)!important}
-html[data-gafi-ui="on"][data-gafi-theme="forest"] body :is(a,[role="link"]){color:var(--gafi-accent-2)!important}
-html[data-gafi-ui="on"][data-gafi-theme="sunset"] body :is(a,[role="link"]){color:var(--gafi-accent)!important}
-html[data-gafi-ui="on"][data-gafi-theme="sakura"] body :is(a,[role="link"]){color:var(--gafi-accent)!important}
-html[data-gafi-ui="on"][data-gafi-theme="desert"] body :is(a,[role="link"]){color:var(--gafi-accent)!important}
-html[data-gafi-ui="on"][data-gafi-theme="space"] body :is(a,[role="link"]){color:var(--gafi-accent-2)!important}
+/* When effects are disabled, the extension must stop painting them. */
+html[data-gafi-ui="on"][data-gafi-atmosphere="false"] #gafi-atmosphere-layer{display:none!important}
+html[data-gafi-ui="on"][data-gafi-gradients="false"] body::before{background:none!important;opacity:0!important}
+html[data-gafi-ui="on"][data-gafi-glow="false"] #gafi-ui-toggle,
+html[data-gafi-ui="on"][data-gafi-glow="false"] #gafi-ui-panel,
+html[data-gafi-ui="on"][data-gafi-glow="false"] #gafi-ui-panel *{text-shadow:none!important}
+html[data-gafi-ui="on"][data-gafi-glow="false"] #gafi-ui-toggle,
+html[data-gafi-ui="on"][data-gafi-glow="false"] #gafi-ui-panel,
+html[data-gafi-ui="on"][data-gafi-glow="false"] .gafi-theme-card.is-active{box-shadow:none!important}
+html[data-gafi-ui="on"][data-gafi-glow="false"] #gafi-atmosphere-layer *{box-shadow:none!important}
+
+/* Light schemes use the selected contrast colour instead of ChatGPT's dark text tokens. */
+html[data-gafi-ui="on"][data-gafi-scheme="light"] body :is(p,h1,h2,h3,h4,h5,h6,li,dt,dd,label,blockquote,pre,code,strong,em,button,[role="button"]){color:var(--gafi-text)!important}
+html[data-gafi-ui="on"][data-gafi-scheme="light"] body :is(input,textarea,select,[contenteditable="true"]){color:var(--gafi-text)}
+
+/* The selected palette also controls ordinary links instead of leaving native blue links behind. */
+html[data-gafi-ui="on"] body :is(a,[role="link"]){color:var(--gafi-accent)!important}
+
+/* Reduced motion remains independent from the native ChatGPT accessibility setting. */
+html[data-gafi-ui="on"][data-gafi-animations="false"] #gafi-atmosphere-layer,
+html[data-gafi-ui="on"][data-gafi-animations="false"] #gafi-atmosphere-layer *{animation:none!important}
