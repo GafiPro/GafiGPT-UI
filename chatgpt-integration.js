@@ -5,10 +5,11 @@
     search: /search|buscar|pesquis|find|procurar/i,
     composer: /pergunte qualquer coisa|ask anything|message|mensagem|send a message/i,
     account: /resgatar oferta|redeem offer|upgrade|plano|plan|plus|pro|team|business|free|conta|account/i,
+    topChrome: /oferta gratuita|free offer|resgatar oferta|redeem offer|partilhar|share/i,
     chatgpt: /^chatgpt$/i,
   };
 
-  const MARKERS = ['gafiSearchSurface','gafiChatgptSurface','gafiAccountSurface','gafiComposerSurface'];
+  const MARKERS = ['gafiSearchSurface','gafiChatgptSurface','gafiAccountSurface','gafiComposerSurface','gafiTopChromeSurface'];
   const attrFor = key => `data-${key.replace(/[A-Z]/g, m => `-${m.toLowerCase()}`)}`;
 
   function textOf(node) {
@@ -25,13 +26,15 @@
     });
   }
 
-  function walkAncestors(node, callback, maxDepth = 10) {
+  function ancestors(node, maxDepth = 16) {
+    const result = [];
     let current = node instanceof Element ? node : node?.parentElement;
     for (let depth = 0; current && depth < maxDepth; depth += 1, current = current.parentElement) {
       if (!(current instanceof HTMLElement)) continue;
       const rect = current.getBoundingClientRect();
-      if (rect.width && rect.height) callback(current, rect, getComputedStyle(current), depth);
+      if (rect.width && rect.height) result.push({ el: current, rect, style: getComputedStyle(current), depth });
     }
+    return result;
   }
 
   function markComposer() {
@@ -40,27 +43,17 @@
       if (!WORDS.composer.test(meta)) return;
       node.dataset.gafiComposer = 'true';
 
-      let marked = false;
-      walkAncestors(node, (el, rect, style, depth) => {
-        if (marked) return;
-        const fixedLike = style.position === 'fixed' || style.position === 'sticky';
-        const bottomZone = rect.bottom >= window.innerHeight - 320;
-        const wideEnough = rect.width >= Math.max(350, window.innerWidth * 0.35);
-        if (fixedLike && bottomZone && wideEnough) {
-          el.dataset.gafiComposerSurface = 'true';
-          marked = true;
-        }
+      const candidates = ancestors(node).filter(({ rect, style, depth }) => {
+        const nearBottom = rect.bottom >= window.innerHeight - 300;
+        const broad = rect.width >= Math.max(450, window.innerWidth * 0.42);
+        const plausible = rect.height >= 45 && rect.height <= 260;
+        const positioned = style.position === 'fixed' || style.position === 'sticky' || depth <= 9;
+        return nearBottom && broad && plausible && positioned;
       });
 
-      if (!marked) {
-        walkAncestors(node, (el, rect, style, depth) => {
-          if (marked || depth < 1) return;
-          if (rect.bottom >= window.innerHeight - 230 && rect.width >= Math.max(350, window.innerWidth * 0.35) && rect.height >= 55) {
-            el.dataset.gafiComposerSurface = 'true';
-            marked = true;
-          }
-        });
-      }
+      // Mark every plausible shell in this small bottom zone. ChatGPT often puts
+      // its gradient/fade on an ancestor rather than on the textarea container.
+      candidates.forEach(({ el }) => { el.dataset.gafiComposerSurface = 'true'; });
     });
   }
 
@@ -69,48 +62,49 @@
       const meta = textOf(node);
       if (!WORDS.search.test(meta) || WORDS.composer.test(meta)) return;
       node.dataset.gafiSearch = 'true';
-      walkAncestors(node, (el, rect, style, depth) => {
-        if (!el.hasAttribute(attrFor('gafiSearchSurface')) && rect.width >= 180 && rect.height >= 36 && depth <= 5) el.dataset.gafiSearchSurface = 'true';
-      }, 5);
+      const candidate = ancestors(node, 7).find(({ rect }) => rect.width >= 180 && rect.height >= 36 && rect.height <= 180);
+      if (candidate) candidate.el.dataset.gafiSearchSurface = 'true';
       const dialog = node.closest('[role="dialog"]');
       if (dialog) dialog.dataset.gafiSearchSurface = 'true';
     });
   }
 
-  function markShell() {
+  function markSemanticTextSurface(regex, marker, predicate) {
     const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_ELEMENT);
     while (walker.nextNode()) {
       const node = walker.currentNode;
       if (!(node instanceof Element)) continue;
       const text = textOf(node);
-      if (!text || text.length > 120) continue;
-
-      if (WORDS.chatgpt.test(text)) {
-        let marked = false;
-        walkAncestors(node, (el, rect, style, depth) => {
-          if (marked) return;
-          const topLeft = rect.left <= Math.min(40, window.innerWidth * 0.04) && rect.top <= 90;
-          const sensible = rect.height >= 40 && rect.width >= 180 && rect.width < window.innerWidth * 0.5;
-          if (topLeft && sensible) {
-            el.dataset.gafiChatgptSurface = 'true';
-            marked = true;
-          }
-        }, 10);
-      }
-
-      if (WORDS.account.test(text)) {
-        let marked = false;
-        walkAncestors(node, (el, rect, style, depth) => {
-          if (marked) return;
-          const bottomLeft = rect.left <= Math.min(40, window.innerWidth * 0.04) && rect.bottom >= window.innerHeight - 45;
-          const sensible = rect.width >= 180 && rect.width < window.innerWidth * 0.5 && rect.height >= 70;
-          if (bottomLeft && sensible) {
-            el.dataset.gafiAccountSurface = 'true';
-            marked = true;
-          }
-        }, 10);
-      }
+      if (!text || text.length > 120 || !regex.test(text)) continue;
+      const match = ancestors(node).find(({ rect, style, depth }) => predicate(rect, style, depth));
+      if (match) match.el.dataset[attrFor(marker).slice(5)] = 'true';
     }
+  }
+
+  function markShell() {
+    // Stable top-left ChatGPT branding surface.
+    markSemanticTextSurface(WORDS.chatgpt, 'gafiChatgptSurface', (rect) => {
+      return rect.left <= Math.min(40, window.innerWidth * 0.04) &&
+        rect.top <= 90 && rect.width >= 180 && rect.width < window.innerWidth * 0.5 &&
+        rect.height >= 40 && rect.height <= 180;
+    });
+
+    // Bottom-left account card containing the profile/plan and Redeem Offer button.
+    markSemanticTextSurface(WORDS.account, 'gafiAccountSurface', (rect) => {
+      return rect.left <= Math.min(40, window.innerWidth * 0.04) &&
+        rect.bottom >= window.innerHeight - 35 && rect.width >= 240 && rect.width < window.innerWidth * 0.5 &&
+        rect.height >= 65 && rect.height <= 220;
+    });
+
+    // Top-right action/header chrome. This is where ChatGPT's translucent strip/fade
+    // can live independently from the main header element.
+    markSemanticTextSurface(WORDS.topChrome, 'gafiTopChromeSurface', (rect, style) => {
+      const nearTop = rect.top <= 110 && rect.bottom >= 35;
+      const broad = rect.width >= Math.max(360, window.innerWidth * 0.35);
+      const shallow = rect.height >= 36 && rect.height <= 190;
+      const positioned = style.position === 'fixed' || style.position === 'sticky' || rect.top < 80;
+      return nearTop && broad && shallow && positioned;
+    });
   }
 
   function repair() {
